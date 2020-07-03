@@ -1,0 +1,49 @@
+# Makefile for me on a IBM RS6000 with AIX 3.1
+
+CFLAGS= -O
+LFLAGS= -s
+LIBS=   -lcurses
+OBJ=    buffer.o cursor.o display.o files.o help.o line.o main.o random.o \
+	search.o term.o window.o word.o
+
+me: $(OBJ)
+	cc -o me $(LFLAGS) $(OBJ) $(LIBS)
+
+buffer.o: buffer.c ed.h
+	cc $(CFLAGS) -c buffer.c
+
+cursor.o: cursor.c ed.h
+	cc $(CFLAGS) -c cursor.c
+
+display.o: display.c ed.h
+	cc $(CFLAGS) -c display.c
+
+files.o: files.c ed.h
+	cc $(CFLAGS) -c files.c
+
+help.o: help.c ed.h
+	cc $(CFLAGS) -c help.c
+
+line.o: line.c ed.h
+	cc $(CFLAGS) -c line.c
+
+main.o: main.c ed.h
+	cc $(CFLAGS) -c main.c
+
+random.o: random.c ed.h
+	cc $(CFLAGS) -c random.c
+
+search.o: search.c ed.h
+	cc $(CFLAGS) -c search.c
+
+term.o: term.c ed.h
+	cc $(CFLAGS) -c term.c
+
+window.o: window.c ed.h
+	cc $(CFLAGS) -c window.c
+
+word.o: word.c ed.h
+	cc $(CFLAGS) -c word.c
+
+clean:
+	rm -f *.o core gnome

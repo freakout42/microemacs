@@ -1,0 +1,60 @@
+# Makefile for me on UnixWare 1.1
+
+CC=scocc
+CFLAGS= -O
+LFLAGS= -s
+LIBS=   -lcurses
+OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o \
+	search.o term.o window.o word.o
+
+me: $(OBJ)
+	$(CC) -o me $(LFLAGS) $(OBJ) $(LIBS)
+
+buffer.o: buffer.c ed.h
+	$(CC) $(CFLAGS) -c buffer.c
+
+cursor.o: cursor.c ed.h
+	$(CC) $(CFLAGS) -c cursor.c
+
+display.o: display.c ed.h
+	$(CC) $(CFLAGS) -c display.c
+
+files.o: files.c ed.h
+	$(CC) $(CFLAGS) -c files.c
+
+help.o: help.c ed.h
+	$(CC) $(CFLAGS) -c help.c
+
+line.o: line.c ed.h
+	$(CC) $(CFLAGS) -c line.c
+
+curkeys.h:
+	grep 'define[^K]*KEY_' </opt/ccs/include/tinfo.h >$@
+
+main.o: main.c ed.h curkeys.h
+	$(CC) $(CFLAGS) -c main.c
+
+random.o: random.c ed.h
+	$(CC) $(CFLAGS) -c random.c
+
+search.o: search.c ed.h
+	$(CC) $(CFLAGS) -c search.c
+
+term.o: term.c ed.h
+	$(CC) $(CFLAGS) -DCURSES -c term.c
+
+window.o: window.c ed.h
+	$(CC) $(CFLAGS) -c window.c
+
+word.o: word.c ed.h
+	$(CC) $(CFLAGS) -c word.c
+
+help.c: help_c.eng
+	-ln -f $? $@
+
+install: me
+	strip me
+	su bin -c "cp me /usr/bin/me"
+
+clean:
+	rm -f *.o core me curkeys.h help.c

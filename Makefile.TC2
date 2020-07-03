@@ -1,0 +1,30 @@
+# Makefile for me on MSDOS with TurboC 2.0
+
+AS=tasm
+ASFLAGS=
+CC=tcc -O
+LD=tlink
+
+.asm.obj:
+	$(AS) $(ASFLAGS) $<
+	del $*.sym
+
+.c.obj:
+	$(CC) -c $<
+
+OBJ=	buffer.obj cursor.obj display.obj files.obj \
+	globargs.obj \
+	help.obj line.obj main.obj random.obj \
+	search.obj term.obj window.obj word.obj
+
+me.exe:	help.c $(OBJ)
+	$(LD) @me.opt
+
+help.c:	help_c.eng
+	copy help_c.eng help.c
+
+turboc.cfg:	tcconfig.tc
+	tcconfig tcconfig.tc turboc.cfg
+
+tcconfig.tc:	turboc.cfg
+	tcconfig turboc.cfg tcconfig.tc
