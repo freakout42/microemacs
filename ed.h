@@ -7,6 +7,7 @@
  * mb: all short's changed to int's, except l_size & l_length
  * which were changed to char.
  * um: for UN*X System V set the defines V7 ``and'' SYS_V to 1 !!
+ * svn
  */
 #define VERSION "5.0"
 
