@@ -1,4 +1,4 @@
-# Makefile for me on MSDOS with TurboC 2.0
+# Makefile for MEX on MSDOS with TurboC 2.0
 
 AS=tasm
 ASFLAGS=
@@ -17,8 +17,8 @@ OBJ=	buffer.obj cursor.obj display.obj files.obj \
 	help.obj line.obj main.obj random.obj \
 	search.obj term.obj window.obj word.obj
 
-me.exe:	help.c $(OBJ)
-	$(LD) @me.opt
+mex.exe:	help.c $(OBJ)
+	$(LD) @mex.opt
 
 help.c:	help_c.eng
 	copy help_c.eng help.c

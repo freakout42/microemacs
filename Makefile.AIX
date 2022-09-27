@@ -1,4 +1,4 @@
-# Makefile for me on a IBM RS6000 with AIX 3.1
+# Makefile for GNOME on a IBM RS6000 with AIX 3.1
 
 CFLAGS= -O
 LFLAGS= -s
@@ -6,8 +6,8 @@ LIBS=   -lcurses
 OBJ=    buffer.o cursor.o display.o files.o help.o line.o main.o random.o \
 	search.o term.o window.o word.o
 
-me: $(OBJ)
-	cc -o me $(LFLAGS) $(OBJ) $(LIBS)
+gnome: $(OBJ)
+	cc -o gnome $(LFLAGS) $(OBJ) $(LIBS)
 
 buffer.o: buffer.c ed.h
 	cc $(CFLAGS) -c buffer.c

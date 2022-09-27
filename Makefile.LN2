@@ -1,58 +1,34 @@
-# Makefile for me on Linux
+# Makefile for MEX on Linux
 
-CFLAGS= -O3 -I/usr/include/ncurses -Dlinux2
-LIBS=   -lncurses
-OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
+CFLAGS=-O3 -Wall -Werror -Dlinux2
+LIBS=-lncurses
+SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
+OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
+SCP=/opt/ssh/bin/scp
+USRINC=/usr/include
 
-me: $(OBJ)
+mex: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
-	strip $@
 
-buffer.o: buffer.c ed.h
-	$(CC) $(CFLAGS) -c buffer.c
+$(SRC):	ed.h
 
-cursor.o: cursor.c ed.h
-	$(CC) $(CFLAGS) -c cursor.c
-
-display.o: display.c ed.h
-	$(CC) $(CFLAGS) -c display.c
-
-files.o: files.c ed.h
-	$(CC) $(CFLAGS) -c files.c
-
-help.o: help.c ed.h
-	$(CC) $(CFLAGS) -c help.c
-
-line.o: line.c ed.h
-	$(CC) $(CFLAGS) -c line.c
-
-curkeys.h:
-	grep 'define[^K]*KEY_' </usr/include/ncurses.h >$@
-
-main.o: main.c ed.h curkeys.h
-	$(CC) $(CFLAGS) -c main.c
-
-random.o: random.c ed.h
-	$(CC) $(CFLAGS) -c random.c
-
-search.o: search.c ed.h
-	$(CC) $(CFLAGS) -c search.c
+main.o: main.c curkeys.h
+	$(CC) $(CFLAGS) -Wno-missing-braces -c main.c
 
 term.o: term.c ed.h
-	$(CC) $(CFLAGS) -DCURSES -c term.c
+	$(CC) $(CFLAGS) -DCURSES -I/usr/include/ncurses -c term.c
 
-window.o: window.c ed.h
-	$(CC) $(CFLAGS) -c window.c
-
-word.o: word.c ed.h
-	$(CC) $(CFLAGS) -c word.c
+curkeys.h:
+	grep 'define[^K]*KEY_' <$(USRINC)/ncurses.h >$@
 
 help.c: help_c.eng
-	-ln -f $? $@
+	-ln -f $< $@
 
-install: me
-	strip me
-	su bin -c "cp me /usr/local/bin"
+install: mex
+	strip mex
+	cp mex bin/me.`uname -i`
+	$(SCP) mex bongo:/opt/arx/bin/me
+	$(SCP) mex bongo:/opt/xbase/bin/me
 
 clean:
-	rm -f *.o core me curkeys.h help.c
+	rm -f *.o core mex curkeys.h help.c mev mes me

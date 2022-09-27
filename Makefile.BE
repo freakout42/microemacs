@@ -1,4 +1,4 @@
-# Makefile for me on BeOS
+# Makefile for MEX on BeOS
 
 LIBS=	-ltermcap
 
@@ -7,8 +7,8 @@ OBJ=	buffer.o cursor.o files.o \
 	search.o window.o word.o \
 	display.o help.o main.o term.o
 
-me: $(OBJ)
-	cc -o me $(LFLAGS) $(OBJ) $(LIBS)
+mex: $(OBJ)
+	cc -o mex $(LFLAGS) $(OBJ) $(LIBS)
 
 buffer.o: buffer.c ed.h
 	cc $(CFLAGS) -c buffer.c
@@ -49,9 +49,9 @@ word.o: word.c ed.h
 help.c: help_c.eng
 	-ln -f $? $@
 
-install: me
-	strip me
-	su bin -c "cp me /boot/home/bin"
+install: mex
+	strip mex
+	su bin -c "cp mex /boot/home/bin"
 
 clean:
-	rm -f *.o core me curkeys.h help.c
+	rm -f *.o core mex curkeys.h help.c

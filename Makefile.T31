@@ -1,4 +1,4 @@
-# Makefile for me on a TARGON/31 with TOS 4.0.12
+# Makefile for GNOME on a TARGON/31 with TOS 4.0.12
 
 CFLAGS= -O
 LFLAGS= -s
@@ -6,7 +6,7 @@ LIBS=   -ltermlib
 OBJ=    buffer.o cursor.o display.o files.o help.o line.o main.o random.o \
 	search.o term.o window.o word.o
 
-me: $(OBJ)
+gnome: $(OBJ)
 	cc -o gnome $(LFLAGS) $(OBJ) $(LIBS)
 
 buffer.o: buffer.c ed.h

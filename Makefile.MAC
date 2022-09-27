@@ -1,56 +1,32 @@
-# Makefile for me on FreeBSD 7.0 amd64
+# Makefile for MEX on MacOS 10.15 Xcode-12.4
 
-CFLAGS= -g -Dfreebsd7
-LFLAGS= -s
-LIBS=   -lcurses
-OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o \
-	search.o term.o window.o word.o
+CFLAGS=-g -Dfreebsd7
+# -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type -Wno-comment
+LIBS=-lcurses
+SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
+OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
+USRINC=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include
 
-me: $(OBJ)
-	cc -o me $(LFLAGS) $(OBJ) $(LIBS)
+mex: $(OBJ)
+	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
 
-buffer.o: buffer.c ed.h
-	cc $(CFLAGS) -c buffer.c
+$(SRC): ed.h
 
-cursor.o: cursor.c ed.h
-	cc $(CFLAGS) -c cursor.c
-
-display.o: display.c ed.h
-	cc $(CFLAGS) -c display.c
-
-files.o: files.c ed.h
-	cc $(CFLAGS) -c files.c
-
-help.o: help.c ed.h
-	cc $(CFLAGS) -c help.c
-
-line.o: line.c ed.h
-	cc $(CFLAGS) -c line.c
-
-main.o: main.c ed.h
-	cc $(CFLAGS) -c main.c
-
-random.o: random.c ed.h
-	cc $(CFLAGS) -c random.c
-
-search.o: search.c ed.h
-	cc $(CFLAGS) -c search.c
+main.o: main.c curkeys.h
+	$(CC) $(CFLAGS) -Wno-missing-braces -c main.c
 
 term.o: term.c ed.h
-	cc $(CFLAGS) -DCURSES -c term.c
+	$(CC) $(CFLAGS) -DCURSES -I/usr/include/ncurses -c term.c
 
-window.o: window.c ed.h
-	cc $(CFLAGS) -c window.c
-
-word.o: word.c ed.h
-	cc $(CFLAGS) -c word.c
+curkeys.h:
+	grep 'define[^K]*KEY_' <$(USRINC)/ncurses.h >$@
 
 help.c: help_c.eng
-	-ln -f $? $@
+	-ln -f $< $@
 
-install: me
-	strip me
-	su bin -c "cp me /usr/local/bin"
+install: mex
+	strip mex
+	cp mex \$HOME/bin/me
 
 clean:
-	rm -f *.o core me help.c
+	rm -f *.o core mex help.c

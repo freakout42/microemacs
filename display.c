@@ -13,8 +13,6 @@
 #include	<stdarg.h>
 #include	"ed.h"
 
-void update(int visiplay);
-
 #define WFDEBUG 0			/* Window flag debug.		*/
 
 extern int getkey();
@@ -55,7 +53,7 @@ VIDEO	**pscreen;			/* Physical screen.		*/
  * call to "update".
  * mb: added initialization of v_flag fields since we want VFMOD right.
  */
-vtinit()
+void vtinit()
 {
 	register int	i;
 	register VIDEO  *vp;
@@ -100,6 +98,22 @@ vtinit()
 }
 
 /*
+ * Send a command to the terminal
+ * to move the hardware cursor to row "row"
+ * and column "col". The row and column arguments
+ * are origin 0. Optimize out random calls.
+ * Update "ttrow" and "ttcol".
+ */
+void movecursor(row, col)
+{
+	if (row!=ttrow || col!=ttcol) {
+		ttrow = row;
+		ttcol = col;
+		(*term.t_move)(row, col);
+	}
+}
+
+/*
  * Clean up the virtual terminal
  * system, in anticipation for a return to the
  * operating system. Move down to the last line and
@@ -107,42 +121,13 @@ vtinit()
  * written in the line). Shut down the channel
  * to the terminal.
  */
-vttidy()
+void vttidy()
 {
 	movecursor(term.t_nrow, 0);
 #ifndef MSDOS
-/*	(*term.t_putchar)('\n');	/* mb: scroll! */
+/*	(*term.t_putchar)('\n');	/ * mb: scroll! */
 #endif
 	(*term.t_close)();
-}
-
-/*
- * mb: toggle visibility of tabs, spaces and newlines
- */
-int
-visitog(f,n)
-{
-	visible = !visible;
-	sgarbf = TRUE;
-	update (FALSE);
-	if (visible)
-		mlwrite("[white-space characters visible]");
-	else
-		mlwrite("[white-space white]");
-	return (TRUE);
-}
-
-/*
- * Set the virtual cursor to
- * the specified row and column on the
- * virtual screen. There is no checking for
- * nonsense values; this might be a good
- * idea during the early stages.
- */
-vtmove(row, col)
-{
-	vtrow = row;
-	vtcol = col;
 }
 
 /*
@@ -154,6 +139,7 @@ vtmove(row, col)
  * Only column overflow is checked.
  * mb: added general tab size & "visible" option.
  */
+void vtputc(int c);
 void
 vvtputc(c, wvsbl)
 	register int	c;
@@ -190,9 +176,52 @@ vvtputc(c, wvsbl)
 	vp->v_col = vtcol;
 }
 
-vtputc(c)				/* mb: split */
+void vtputc(c)				/* mb: split */
 {
 	vvtputc(c, 0);
+}
+
+int
+modeput (cp, n)
+	register char *cp;
+	int n;
+{
+	register int c, m;
+	m = n;
+	while ((c = *cp++) != 0) {
+		vtputc(c);
+		++m;
+	}
+	return (m);
+}
+
+/*
+ * mb: toggle visibility of tabs, spaces and newlines
+ */
+int
+visitog(f,n)
+{
+	visible = !visible;
+	sgarbf = TRUE;
+	update (FALSE);
+	if (visible)
+		mlwrite("[white-space characters visible]");
+	else
+		mlwrite("[white-space white]");
+	return (TRUE);
+}
+
+/*
+ * Set the virtual cursor to
+ * the specified row and column on the
+ * virtual screen. There is no checking for
+ * nonsense values; this might be a good
+ * idea during the early stages.
+ */
+void vtmove(row, col)
+{
+	vtrow = row;
+	vtcol = col;
 }
 
 /*
@@ -201,7 +230,7 @@ vtputc(c)				/* mb: split */
  * line on which the software cursor is
  * located.
  */
-vteeol()
+void vteeol()
 {
 	register VIDEO  *vp;
 
@@ -210,6 +239,184 @@ vteeol()
 	 *	vp->v_text[vtcol++] = ' ';
 	 */
 	memset(vp->v_text+vtcol, ' ', NLINE-vtcol);
+}
+
+int
+mlputc(c)
+	register int c;
+{
+	register int t, i;
+	int (*tputc)();
+	tputc = term.t_putchar;
+	c &= 0xFF;
+	t = c;
+	i = 0;
+	if (c == '\n') {
+		(*tputc)('<');
+		t = '<';
+		i = 1;
+	} else if (c == '\t') {
+		(*tputc)('>');
+		t = '>';
+		i = 1;
+	} else if (c == WHITESPACE) {
+		(*tputc)('_');
+		t = '_';
+		i = 1;
+	} else if (c == ANYCHAR) {
+		t = '.';
+	} else if (c == NEGCHAR) {
+		t = '!';
+	} else if (c<0x20 || c==0x7F) {
+		(*tputc)('^');
+		t ^= 0x40;
+		i = 1;
+	}
+	(*tputc)(t);
+	return (i);
+}
+
+/*
+ * Write out a string.  Update the physical cursor position.
+ * This assumes that the characters in the
+ * string all have width "1"; if this is not
+ * the case things will get messed up a little.
+ */
+void mlputs(s)
+register char	*s;
+{
+	register int	c;
+
+	while ((c = *s++) != 0) {
+		(*term.t_putchar)(c);
+		++ttcol;
+	}
+}
+
+/*
+ * Write out an integer, in
+ * the specified radix. Update the physical
+ * cursor position. This will not handle any
+ * negative numbers; maybe it should.
+ */
+void mlputi(i, r)
+{
+	register int	q;
+	static char hexdigits[] = "0123456789ABCDEF";
+
+	if (i < 0) {
+		i = -i;
+		(*term.t_putchar)('-');
+	}
+	q = i/r;
+	if (q != 0)
+		mlputi(q, r);
+	(*term.t_putchar)(hexdigits[i%r]);
+	++ttcol;
+}
+
+/*
+ * do the same except as a long integer.
+ */
+void mlputli(l, r)
+long l;
+{
+	register long q;
+
+	if (l < 0) {
+		l = -l;
+		(*term.t_putchar)('-');
+	}
+	q = l/r;
+	if (q != 0)
+		mlputli(q, r);
+	(*term.t_putchar)((int)(l%r)+'0');
+	++ttcol;
+}
+
+/*
+ * Redisplay the mode line for
+ * the window pointed to by the "wp".
+ * This is the only routine that has any idea
+ * of how the modeline is formatted.
+ * (mb: changed the modeline format.)
+ * Called by "update" any time a window is dirty.
+ */
+void modeline(wp)
+register WINDOW *wp;
+{
+	register char	*cp;
+	register int	n;
+	register BUFFER *bp;
+	int verbose = TRUE;
+start:
+	n = wp->w_toprow+wp->w_ntrows;		/* Location.		*/
+	vscreen[n]->v_flag |= VFCHG | VFMOD;	/* Redraw next time.	*/
+	vtmove(n, 0);				/* Seek to right line.  */
+	bp = wp->w_bufp;
+	if (bp->b_flag & BFEDIT) {
+		if (bp->b_flag & BFFORE)
+			vtputc('*');	/* ar: '*' if in foreign mode */
+		else
+			vtputc('+');	/* mb: '+' if in edit mode */
+		}
+	else
+		vtputc('-');
+	if (bp->b_flag & BFCHG)		/* '*' if buffer changed. */
+		vtputc('*');
+	else
+		vtputc('-');
+	vtputc(' ');
+	n = 3;
+	if (verbose) {
+#if AtST
+		cp = "MEX -- Buffer: ";	/* mb: AtST has 'Help' key */
+#endif
+#if MSDOS
+#if HELP
+		cp = "MEX -- F1 for help -- ";
+#else
+		cp = "MEX -- Buffer: ";
+#endif
+#endif
+#if (V7 | VMS | CPM)
+#if HELP
+#if CURSES
+		cp = "MEX - F1 Help - ";
+#else
+		cp = "MEX -- ESC-? for help -- ";
+#endif
+#else
+		cp = "MEX -- Buffer: ";
+#endif
+#endif
+		n = modeput (cp, n);
+	}
+	n = modeput (bp->b_bname, n);		/* Buffer name */
+	n = modeput (" -- ", n);
+	if (bp->b_fname[0] != 0) {		/* File name */
+		n = modeput ("File: ", n);
+		n = modeput (bp->b_fname, n);
+	}
+#if  WFDEBUG
+	vtputc('-');
+	vtputc((wp->w_flag&WFMODE)!=0  ? 'M' : '-');
+	vtputc((wp->w_flag&WFHARD)!=0  ? 'H' : '-');
+	vtputc((wp->w_flag&WFEDIT)!=0  ? 'E' : '-');
+	vtputc((wp->w_flag&WFMOVE)!=0  ? 'V' : '-');
+	vtputc((wp->w_flag&WFFORCE)!=0 ? 'F' : '-');
+	n += 6;
+#endif
+	vtputc(' ');
+	++n;
+	if (verbose && n > term.t_ncol) {	/* long pathname */
+		verbose = FALSE;
+		goto start;
+	}
+	while (n < term.t_ncol) {		/* Pad to full width.	*/
+		vtputc('-');
+		++n;
+	}
 }
 
 /*
@@ -233,9 +440,9 @@ update(visiplay)
 	register int	c;
 	register int	v;
 	register int	i;
-	int	vflag, *pvflag;
+	int	*pvflag;
 	int	wshift, wsflag, offset;
-	VIDEO	*vp, *pp;
+	VIDEO	*vp;
 	BUFFER	*bp;
 
 	if (playback == TRUE) {
@@ -531,7 +738,7 @@ VIDEO	*vline, *pline;
 			cp5 = cp3;		/* fewer characters.	*/
 	}
 
-	movecursor(row, (int)(cp2-(int)&ptext[0]));/* Go to first change	*/
+	movecursor(row, (int)(cp2-(unsigned char *)&ptext[0]));/* Go to first change	*/
 	if (vmod)
 		(*term.t_hglt)();
 #ifdef HP700
@@ -561,123 +768,6 @@ VIDEO	*vline, *pline;
 }
 
 /*
- * Redisplay the mode line for
- * the window pointed to by the "wp".
- * This is the only routine that has any idea
- * of how the modeline is formatted.
- * (mb: changed the modeline format.)
- * Called by "update" any time a window is dirty.
- */
-modeline(wp)
-register WINDOW *wp;
-{
-	register char	*cp;
-	register int	c;
-	register int	n;
-	register BUFFER *bp;
-	int verbose = TRUE;
-start:
-	n = wp->w_toprow+wp->w_ntrows;		/* Location.		*/
-	vscreen[n]->v_flag |= VFCHG | VFMOD;	/* Redraw next time.	*/
-	vtmove(n, 0);				/* Seek to right line.  */
-	bp = wp->w_bufp;
-	if (bp->b_flag & BFEDIT) {
-		if (bp->b_flag & BFFORE)
-			vtputc('*');	/* ar: '*' if in foreign mode */
-		else
-			vtputc('+');	/* mb: '+' if in edit mode */
-		}
-	else
-		vtputc('-');
-	if (bp->b_flag & BFCHG)		/* '*' if buffer changed. */
-		vtputc('*');
-	else
-		vtputc('-');
-	vtputc(' ');
-	n = 3;
-	if (verbose) {
-#if AtST
-		cp = "me -- Buffer: ";	/* mb: AtST has 'Help' key */
-#endif
-#if MSDOS
-#if HELP
-		cp = "me -- F1 for help -- ";
-#else
-		cp = "me -- Buffer: ";
-#endif
-#endif
-#if (V7 | VMS | CPM)
-#if HELP
-#if CURSES
-		cp = "me - F1 Help - ";
-#else
-		cp = "me -- ESC-? for help -- ";
-#endif
-#else
-		cp = "me -- Buffer: ";
-#endif
-#endif
-		n = modeput (cp, n);
-	}
-	n = modeput (bp->b_bname, n);		/* Buffer name */
-	n = modeput (" -- ", n);
-	if (bp->b_fname[0] != 0) {		/* File name */
-		n = modeput ("File: ", n);
-		n = modeput (bp->b_fname, n);
-	}
-#if  WFDEBUG
-	vtputc('-');
-	vtputc((wp->w_flag&WFMODE)!=0  ? 'M' : '-');
-	vtputc((wp->w_flag&WFHARD)!=0  ? 'H' : '-');
-	vtputc((wp->w_flag&WFEDIT)!=0  ? 'E' : '-');
-	vtputc((wp->w_flag&WFMOVE)!=0  ? 'V' : '-');
-	vtputc((wp->w_flag&WFFORCE)!=0 ? 'F' : '-');
-	n += 6;
-#endif
-	vtputc(' ');
-	++n;
-	if (verbose && n > term.t_ncol) {	/* long pathname */
-		verbose = FALSE;
-		goto start;
-	}
-	while (n < term.t_ncol) {		/* Pad to full width.	*/
-		vtputc('-');
-		++n;
-	}
-}
-
-int
-modeput (cp, n)
-	register char *cp;
-	int n;
-{
-	register int c, m;
-	m = n;
-	while ((c = *cp++) != 0) {
-		vtputc(c);
-		++m;
-	}
-	return (m);
-}
-
-
-/*
- * Send a command to the terminal
- * to move the hardware cursor to row "row"
- * and column "col". The row and column arguments
- * are origin 0. Optimize out random calls.
- * Update "ttrow" and "ttcol".
- */
-movecursor(row, col)
-{
-	if (row!=ttrow || col!=ttcol) {
-		ttrow = row;
-		ttcol = col;
-		(*term.t_move)(row, col);
-	}
-}
-
-/*
  * Erase the message line.
  * This is a special routine because
  * the message line is not considered to be
@@ -685,7 +775,7 @@ movecursor(row, col)
  * immediately; the terminal buffer is flushed
  * via a call to the flusher.
  */
-mlerase()
+void mlerase()
 {
 	movecursor(term.t_nrow, 0);
 	(*term.t_eeol)();
@@ -701,11 +791,10 @@ mlerase()
  * a ^G. Used any time a confirmation is
  * required. mb: modified so cr unneeded.
  */
-mlyesno(prompt)
+int mlyesno(prompt)
 char	*prompt;
 {
 	register int	c;
-	register int	s;
 	char		buf[64];
 
 	for (;;) {
@@ -750,7 +839,7 @@ mlreply(prompt, dflt, buf, width, doesc)
 {
 	register int  c, i, j;
 	register char *p1, *p2;
-	int cpos, col, row, fresh, escmode, tmp;
+	int col, row, fresh, escmode;
 	int (*tputc)();
 	extern int getkey();
 
@@ -1035,41 +1124,6 @@ verbatim:
 	goto loop;
 }
 
-int
-mlputc(c)
-	register int c;
-{
-	register int t, i;
-	int (*tputc)();
-	tputc = term.t_putchar;
-	c &= 0xFF;
-	t = c;
-	i = 0;
-	if (c == '\n') {
-		(*tputc)('<');
-		t = '<';
-		i = 1;
-	} else if (c == '\t') {
-		(*tputc)('>');
-		t = '>';
-		i = 1;
-	} else if (c == WHITESPACE) {
-		(*tputc)('_');
-		t = '_';
-		i = 1;
-	} else if (c == ANYCHAR) {
-		t = '.';
-	} else if (c == NEGCHAR) {
-		t = '!';
-	} else if (c<0x20 || c==0x7F) {
-		(*tputc)('^');
-		t ^= 0x40;
-		i = 1;
-	}
-	(*tputc)(t);
-	return (i);
-}
-
 /*
  * Write a message into the message
  * line. Keep track of the physical cursor
@@ -1129,62 +1183,4 @@ mlwrite(fmt)
 	(*term.t_eeol)();
 	(*term.t_flush)();
 	mpresf = TRUE;
-}
-
-/*
- * Write out a string.  Update the physical cursor position.
- * This assumes that the characters in the
- * string all have width "1"; if this is not
- * the case things will get messed up a little.
- */
-mlputs(s)
-register char	*s;
-{
-	register int	c;
-
-	while ((c = *s++) != 0) {
-		(*term.t_putchar)(c);
-		++ttcol;
-	}
-}
-
-/*
- * Write out an integer, in
- * the specified radix. Update the physical
- * cursor position. This will not handle any
- * negative numbers; maybe it should.
- */
-mlputi(i, r)
-{
-	register int	q;
-	static char hexdigits[] = "0123456789ABCDEF";
-
-	if (i < 0) {
-		i = -i;
-		(*term.t_putchar)('-');
-	}
-	q = i/r;
-	if (q != 0)
-		mlputi(q, r);
-	(*term.t_putchar)(hexdigits[i%r]);
-	++ttcol;
-}
-
-/*
- * do the same except as a long integer.
- */
-mlputli(l, r)
-long l;
-{
-	register long q;
-
-	if (l < 0) {
-		l = -l;
-		(*term.t_putchar)('-');
-	}
-	q = l/r;
-	if (q != 0)
-		mlputli(q, r);
-	(*term.t_putchar)((int)(l%r)+'0');
-	++ttcol;
 }

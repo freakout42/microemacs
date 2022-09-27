@@ -4,7 +4,7 @@
  * Further substantial modifications by MB: January and April, 1988.
  *
  * Parts of the program Copyright (c) 1986, 1988 by Moshe Braner.
- * Program name changed from microEMACS to me.
+ * Program name changed from microEMACS to MEX.
  *
  * Ported to Coherent 3.1 and UN*X System V
  * Copyright (c) 1991 by Udo Munk
@@ -56,7 +56,7 @@ void edmore(char fname[]);
 #define DASTART	990		/* starting the DA	*/
 #define DACLOSE	991		/* closing the DA	*/
 
-char	*rcsid = "$Id: main.c,v 1.29 2020/06/22 17:41:18 axel Exp $";
+char	*rcsid = "$Id: main.c,v 1.33 2022/08/30 08:04:44 axel Exp $";
 int	logit = LOGIT;			/* mb: log keystrokes		*/
 int	playback = FALSE;		/* mb: playback from log file	*/
 #if ST_DA
@@ -78,7 +78,7 @@ int	lastflag;			/* Flags, last command		*/
 int	curgoal;			/* Goal column			*/
 int	ovrstrk = FALSE;		/* mb: insert/overstrike flag	*/
 int	deldir  = FALSE;		/* mb: <Delete> direction flag	*/
-int	casesens = TRUE;		/* mb: search case sensitive	*/
+int	casesens = FALSE;		/* mb: search case sensitive	*/
 BUFFER  *curbp;				/* Current buffer		*/
 BUFFER  *oldbp = NULL;			/* mb: previous buffer		*/
 WINDOW  *curwp;				/* Current window		*/
@@ -160,7 +160,7 @@ extern  int	refresh();		/* Refresh the screen		*/
 extern  int	twiddle();		/* Twiddle characters		*/
 extern  int	ltwiddle();		/* Twiddle lines - mb: added	*/
 extern  int	tab();			/* Insert tab			*/
-extern  int	newline();		/* Insert CR-LF			*/
+extern  int	tnewline();		/* Insert CR-LF			*/
 extern  int	indent();		/* Insert CR-LF, then indent	*/
 extern  int	openline();		/* Open up a blank line		*/
 extern  int	deblank();		/* Delete blank lines		*/
@@ -236,13 +236,13 @@ KEYTAB  keytab[] = {
 #endif
      ED|CNTL|'I',		tab,
 #if defined(VT100) || defined(HP700)
-     ED|CNTL|'J',		newline,
+     ED|CNTL|'J',		tnewline,
 #else
      ED|CNTL|'J',		indent,
 #endif
      ED|CNTL|'K',               killtxt,
 	CNTL|'L',		refresh,
-     ED|CNTL|'M',		newline,
+     ED|CNTL|'M',		tnewline,
 	CNTL|'N',		forwline,
      ED|CNTL|'O',		openline,
 	CNTL|'P',		backline,
@@ -568,12 +568,131 @@ KEYTAB  keytab[] = {
 
 #define NKEYTAB (sizeof(keytab)/sizeof(keytab[0]))
 
+/*
+ * Initialize all of the buffers
+ * and windows. The file name is passed down as
+ * an argument, because the main routine may have been
+ * told to read in a file by default, and we want the
+ * buffer name to be right.
+ */
+void edinit(fname)
+	char	fname[];
+{
+	register BUFFER *bp;
+	register WINDOW *wp;
+	char	bname[NBUFN];
+
+	makename(bname, fname);
+	bp = bfind(bname, TRUE, BFEDIT);	/* First buffer		*/
+	blistp = bfind("[List]", TRUE, BFTEMP); /* Buffer list buffer	*/
+	bhelpp = bfind("[Help]", TRUE, BFTEMP); /* Help screens buffer	*/
+	wp = (WINDOW *) malloc(sizeof(WINDOW)); /* First window		*/
+	if (bp==NULL || wp==NULL || blistp==NULL || bhelpp==NULL)
+#if BFILES
+		_exit(1);
+#else
+		exit(1);
+#endif
+	curbp  = bp;				/* Make this current	*/
+	wheadp = wp;
+	curwp  = wp;
+	wp->w_wndp  = NULL;			/* Initialize window	*/
+	wp->w_bufp  = bp;
+	bp->b_nwnd  = 1;			/* Displayed.		*/
+	wp->w_linep = bp->b_linep;
+	wp->w_dotp  = bp->b_linep;
+	wp->w_doto  = 0;
+	wp->w_markp = NULL;
+	wp->w_marko = 0;
+	wp->w_toprow = 0;
+	wp->w_ntrows = term.t_nrow-1;		/* "-1" for mode line.  */
+	wp->w_force = 0;
+	wp->w_offset = 0;
+	wp->w_flag  = WFMODE|WFHARD;		/* Full.		*/
+}
+
+/*
+ * This is the general command execution
+ * routine. It handles the fake binding of all the
+ * keys to "self-insert". It also clears out the "thisflag"
+ * word, and arranges to move it to the "lastflag", so that
+ * the next command can look at it. Return the status of
+ * command.
+ * mb: added the BFEDIT / ED stuff.
+ */
+int
+execute(c, f, n)
+	register int	c;
+{
+	register KEYTAB *ktp;
+	register int	k;
+	register int	d;
+	register int	status;
+
+	if ((c & 0xFF00) == 0)
+		goto ascii;
+	d = c;
+	if (curbp->b_flag & BFEDIT)
+		d |= ED;
+	ktp = &keytab[0];			/* Look in key table.	*/
+	while (ktp < &keytab[NKEYTAB]) {
+		k = ktp->k_code;
+		if (k==c || k==d) {		/* mb: fit, ED| or not */
+			thisflag = 0;
+			status   = (*ktp->k_fp)(f, n);
+			lastflag = thisflag;
+			return (status);
+		}
+		++ktp;
+	}
+	if (c != d) {
+#if GDEBUG
+		mlwrite("No such command (code 0x%x)", c);
+#else
+		mlwrite("No such command");
+#endif
+		return (FALSE);
+	} /* else fall thru to "view-only" message */
+ascii:
+	if (! (curbp->b_flag & BFEDIT)) {
+#if (AtST | MSDOS)
+		mlwrite("View-only mode - Alt-E to edit");
+#else
+		mlwrite("View-only mode - ^X^E to edit");
+#endif
+		lastflag = 0;			/* Fake last flags.	*/
+		return(FALSE);
+	}
+
+	/* mb:
+	 * If fill column is defined, the argument is positive,
+	 * and we are now past fill column, perform word wrap.
+	 * Don't insert a space if just wrapped.
+	 */
+	if (fillcol>0 && n>0 && getccol(FALSE)>=fillcol) {
+		wrapword(c);
+		if (c == ' ') {
+			lastflag = 0;
+			return (FALSE);
+		}
+	}
+					/* mb: skipped the ASCII check	*/
+	if (n <= 0) {				/* Fenceposts.		*/
+		lastflag = 0;
+		return (n<0 ? FALSE : TRUE);
+	}
+	thisflag = 0;				/* For the future.	*/
+	status   = linsert(n, c, ovrstrk);	/* mb: added param	*/
+	lastflag = thisflag;
+	return (status);
+}
+
 #if (ST_DA == 0)
-usage()
+void usage()
 {
 #if AtST
-	Cconws("\r\nme version " VERSION "\r\n");
-	Cconws("\r\nUsage: me [options] [file(s)]\r\n");
+	Cconws("\r\nMEX version " VERSION "\r\n");
+	Cconws("\r\nUsage: mex [options] [file(s)]\r\n");
 	Cconws("\r\nOptions:\r\n");
 	Cconws("\t-c #\t# columns\r\n");
 	Cconws("\t-f #\tfill column = #\r\n");
@@ -596,8 +715,8 @@ usage()
 	_exit(0);
 #endif
 #if MSDOS
-	cputs("\r\nme version " VERSION "\r\n");
-	cputs("\r\nUsage: me [options] [file(s)]\r\n");
+	cputs("\r\nMEX version " VERSION "\r\n");
+	cputs("\r\nUsage: mex [options] [file(s)]\r\n");
 	cputs("\r\nOptions:\r\n");
 	cputs("-c #    # columns\r\n");
 	cputs("-d      BIOS, rather than direct, screen output\r\n");
@@ -621,8 +740,8 @@ usage()
 	_exit(0);
 #endif
 #if (V7 | VMS | CPM)
-	puts("\nme version " VERSION);
-	puts("\nUsage: me [options] [file(s)]");
+	puts("\nMEX version 2.2");
+	puts("\nUsage: mex [options] [file(s)]");
 	puts("Options:");
 	puts("\t-c #\t# columns");
 	puts("\t-f #\tfill column = #");
@@ -641,7 +760,7 @@ usage()
 	puts("\t-v\tview-only mode");
 #if V7
 #if CANLOG
-	puts("\nSuggested: setenv MEXLOG /myrootdir/.mexlog");
+	puts("\nSuggested: setenv MEXLOG $HOME/.mexlog");
 #endif
 #endif
 	exit(0);
@@ -654,14 +773,14 @@ usage()
 #endif
 
 #if MSDOS
-_main(argc, argv)		/* mb: completely rewritten */
+int _main(argc, argv)		/* mb: completely rewritten */
 #else
-main(argc, argv)		/* mb: completely rewritten */
+int main(argc, argv)		/* mb: completely rewritten */
 #endif
 	int	argc;
 	char	*argv[];
 {
-	register int	c;
+	register int	c=0;
 	register int	f;
 	register int	n;
 	register int	state;
@@ -1030,7 +1149,7 @@ main(argc, argv)		/* mb: completely rewritten */
 
 		Cconws ("\033f");	/* disable vt52 cursor	*/
 		appl_init();
-		menu_id = menu_register (gl_apid,"  me");
+		menu_id = menu_register (gl_apid,"  MEX");
 		wind_get (0, WF_WORKXYWH, &xdesk, &ydesk, &wdesk, &hdesk);
 daloop:
 		evnt_mesag (msgbuff);
@@ -1074,49 +1193,6 @@ daloop:
 #ifdef register
 #undef register
 #endif
-
-/*
- * Initialize all of the buffers
- * and windows. The file name is passed down as
- * an argument, because the main routine may have been
- * told to read in a file by default, and we want the
- * buffer name to be right.
- */
-edinit(fname)
-	char	fname[];
-{
-	register BUFFER *bp;
-	register WINDOW *wp;
-	char	bname[NBUFN];
-
-	makename(bname, fname);
-	bp = bfind(bname, TRUE, BFEDIT);	/* First buffer		*/
-	blistp = bfind("[List]", TRUE, BFTEMP); /* Buffer list buffer	*/
-	bhelpp = bfind("[Help]", TRUE, BFTEMP); /* Help screens buffer	*/
-	wp = (WINDOW *) malloc(sizeof(WINDOW)); /* First window		*/
-	if (bp==NULL || wp==NULL || blistp==NULL || bhelpp==NULL)
-#if BFILES
-		_exit(1);
-#else
-		exit(1);
-#endif
-	curbp  = bp;				/* Make this current	*/
-	wheadp = wp;
-	curwp  = wp;
-	wp->w_wndp  = NULL;			/* Initialize window	*/
-	wp->w_bufp  = bp;
-	bp->b_nwnd  = 1;			/* Displayed.		*/
-	wp->w_linep = bp->b_linep;
-	wp->w_dotp  = bp->b_linep;
-	wp->w_doto  = 0;
-	wp->w_markp = NULL;
-	wp->w_marko = 0;
-	wp->w_toprow = 0;
-	wp->w_ntrows = term.t_nrow-1;		/* "-1" for mode line.  */
-	wp->w_force = 0;
-	wp->w_offset = 0;
-	wp->w_flag  = WFMODE|WFHARD;		/* Full.		*/
-}
 
 /*
  *  mb: Display another file in another window.
@@ -1190,89 +1266,13 @@ escseq(c)
 #endif
 
 /*
- * This is the general command execution
- * routine. It handles the fake binding of all the
- * keys to "self-insert". It also clears out the "thisflag"
- * word, and arranges to move it to the "lastflag", so that
- * the next command can look at it. Return the status of
- * command.
- * mb: added the BFEDIT / ED stuff.
- */
-int
-execute(c, f, n)
-	register int	c;
-{
-	register KEYTAB *ktp;
-	register int	k;
-	register int	d;
-	register int	status;
-
-	if ((c & 0xFF00) == 0)
-		goto ascii;
-	d = c;
-	if (curbp->b_flag & BFEDIT)
-		d |= ED;
-	ktp = &keytab[0];			/* Look in key table.	*/
-	while (ktp < &keytab[NKEYTAB]) {
-		k = ktp->k_code;
-		if (k==c || k==d) {		/* mb: fit, ED| or not */
-			thisflag = 0;
-			status   = (*ktp->k_fp)(f, n);
-			lastflag = thisflag;
-			return (status);
-		}
-		++ktp;
-	}
-	if (c != d) {
-#if GDEBUG
-		mlwrite("No such command (code 0x%x)", c);
-#else
-		mlwrite("No such command");
-#endif
-		return (FALSE);
-	} /* else fall thru to "view-only" message */
-ascii:
-	if (! (curbp->b_flag & BFEDIT)) {
-#if (AtST | MSDOS)
-		mlwrite("View-only mode - Alt-E to edit");
-#else
-		mlwrite("View-only mode - ^X^E to edit");
-#endif
-		lastflag = 0;			/* Fake last flags.	*/
-		return(FALSE);
-	}
-
-	/* mb:
-	 * If fill column is defined, the argument is positive,
-	 * and we are now past fill column, perform word wrap.
-	 * Don't insert a space if just wrapped.
-	 */
-	if (fillcol>0 && n>0 && getccol(FALSE)>=fillcol) {
-		wrapword(c);
-		if (c == ' ') {
-			lastflag = 0;
-			return (FALSE);
-		}
-	}
-					/* mb: skipped the ASCII check	*/
-	if (n <= 0) {				/* Fenceposts.		*/
-		lastflag = 0;
-		return (n<0 ? FALSE : TRUE);
-	}
-	thisflag = 0;				/* For the future.	*/
-	status   = linsert(n, c, ovrstrk);	/* mb: added param	*/
-	lastflag = thisflag;
-	return (status);
-}
-
-/*
  * Read in a key.
  * Convert ctrl keys to the internal character set.
  * mb: simplified, but added the log file stuff.
  */
 int
 getkey() {
-	register int c, ub, lb;
+	register int c, ub, lb=0;
 
 #if CANLOG
 	if (playback == TRUE) {
@@ -1421,7 +1421,7 @@ doplay(f,n)
 	s = mlreply("Playback? (y/n)", "no", buf, 80, FALSE);
 	if (s==TRUE && ((c=buf[0])=='y' || c=='Y')) {
 		if (logit == TRUE) {
-			flushlog();
+			flushlog(TRUE);
 			closelogf();
 		}
 		logit = FALSE;

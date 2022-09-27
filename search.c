@@ -14,6 +14,84 @@
 #define  eq(c,d,s) ((d)==ANYCHAR || (s ? ((c)==(d)) : (FOLD(c)==(d))))
 #define  FOLD(c)   (((c)>='a' && (c)<='z') ? ((c)-0x20) : (c))
 
+/*
+ * Read a pattern.
+ * Stash it in the external
+ * variable "pat". The "pat" is
+ * not updated if the user types in
+ * an empty line. If the user typed
+ * an empty line, and there is no
+ * old pattern, it is an error.
+ * mb: much simpler now that mlreply() does all the work.
+ * mb: remember old patterns.
+ */
+int readpattern(prompt)
+char	*prompt;
+{
+	register int	c, i, s;
+	register char	*dflt1, *dflt2;
+	static	 int	oldpati = (-1);
+	static	 int	maxpati = (-1);
+	static	 char	pat0[NPAT], pat1[NPAT], pat2[NPAT], pat3[NPAT];
+	static	 char	*oldpat[4] = {pat0, pat1, pat2, pat3};
+	char		dbuf[NPAT], buf[NPAT];
+
+	if (pat[0] != '\0') {			/* Old pattern		*/
+		dflt1 = pat;
+		goto start;
+	}
+altpat:
+	if (oldpati >= 0)
+		dflt1 = oldpat[oldpati];
+	else
+		dflt1 = NULL;
+start:
+	if (dflt1 != NULL) {
+		i = 0;
+		do {
+			c = dflt1[i];
+			if (casesens)
+				dbuf[i] = c;
+			else
+				dbuf[i] = FOLD(c);  /* hint: case blind */
+			++i;
+		} while (c);
+		dflt2 = dbuf;
+	} else
+		dflt2 = NULL;
+	s = mlreply(prompt, dflt2, buf, NPAT, TRUE);
+	if (s == UP) {
+		if (oldpati > 0)
+			--oldpati;
+		else if (oldpati==0 && maxpati>0)
+			oldpati = maxpati;
+		goto altpat;
+	}
+	if (s == DOWN) {
+		if (oldpati < maxpati)
+			++oldpati;
+		else if (oldpati > 0)
+			oldpati = 0;
+		goto altpat;
+	}
+	if (s!=TRUE && s!=FALSE)
+		return (ctrlg());
+	if (buf[0] != '\0') {			/* specified		*/
+		strcpy (pat, buf);
+		if (s == TRUE) {
+			++oldpati;
+			if (oldpati > 3)
+				oldpati = 0;
+			if (oldpati > maxpati)
+				maxpati = oldpati;
+			strcpy (oldpat[oldpati], buf);
+		}
+	}
+	else if (dflt2 == NULL)
+		return (ctrlg());
+	return (s);
+}
+
 /* mb: completely rewritten.
  * Search forward.
  * Get a search string from the
@@ -23,15 +101,15 @@
  * and [perhaps] repaint the display.
  * Bound to "M-S".
  */
-forwsearch(f, n)
+int forwsearch(f, n)
 {
 	register LINE *clp;
 	register int  *pp;
 	register int  cbo;
 	register int  c, d, s;
 	register int  found;
-	LINE *tlp;
-	int  tbo, negmode, tmp;
+	LINE *tlp = NULL;
+	int  tbo=0, negmode;
 	int  tpat[NPAT+1];
 
 	if (readpattern("Forward search") == ABORT)
@@ -124,15 +202,15 @@ forwsearch(f, n)
  * the pattern [the last character that
  * was matched]. Bound to "M-R".
  */
-backsearch(f, n)
+int backsearch(f, n)
 {
 	register LINE *clp;
 	register int  *pp;
 	register int  cbo;
-	register int  c, d, s;
+	register int  c, s;
 	register int  found;
-	LINE *tlp;
-	int  tbo, negmode;
+	LINE *tlp=NULL;
+	int  tbo=0, negmode;
 	int  *epp, *tpatp;
 	int  tpat[NPAT+1];
 
@@ -219,84 +297,6 @@ backsearch(f, n)
 
 /* mb: eq() unnecessary now, deleted */
 
-/*
- * Read a pattern.
- * Stash it in the external
- * variable "pat". The "pat" is
- * not updated if the user types in
- * an empty line. If the user typed
- * an empty line, and there is no
- * old pattern, it is an error.
- * mb: much simpler now that mlreply() does all the work.
- * mb: remember old patterns.
- */
-readpattern(prompt)
-char	*prompt;
-{
-	register int	c, i, s;
-	register char	*dflt1, *dflt2;
-	static	 int	oldpati = (-1);
-	static	 int	maxpati = (-1);
-	static	 char	pat0[NPAT], pat1[NPAT], pat2[NPAT], pat3[NPAT];
-	static	 char	*oldpat[4] = {pat0, pat1, pat2, pat3};
-	char		dbuf[NPAT], buf[NPAT];
-
-	if (pat[0] != '\0') {			/* Old pattern		*/
-		dflt1 = pat;
-		goto start;
-	}
-altpat:
-	if (oldpati >= 0)
-		dflt1 = oldpat[oldpati];
-	else
-		dflt1 = NULL;
-start:
-	if (dflt1 != NULL) {
-		i = 0;
-		do {
-			c = dflt1[i];
-			if (casesens)
-				dbuf[i] = c;
-			else
-				dbuf[i] = FOLD(c);  /* hint: case blind */
-			++i;
-		} while (c);
-		dflt2 = dbuf;
-	} else
-		dflt2 = NULL;
-	s = mlreply(prompt, dflt2, buf, NPAT, TRUE);
-	if (s == UP) {
-		if (oldpati > 0)
-			--oldpati;
-		else if (oldpati==0 && maxpati>0)
-			oldpati = maxpati;
-		goto altpat;
-	}
-	if (s == DOWN) {
-		if (oldpati < maxpati)
-			++oldpati;
-		else if (oldpati > 0)
-			oldpati = 0;
-		goto altpat;
-	}
-	if (s!=TRUE && s!=FALSE)
-		return (ctrlg());
-	if (buf[0] != '\0') {			/* specified		*/
-		strcpy (pat, buf);
-		if (s == TRUE) {
-			++oldpati;
-			if (oldpati > 3)
-				oldpati = 0;
-			if (oldpati > maxpati)
-				maxpati = oldpati;
-			strcpy (oldpat[oldpati], buf);
-		}
-	}
-	else if (dflt2 == NULL)
-		return (ctrlg());
-	return (s);
-}
-
 #if CMODE
 
 /*
@@ -308,16 +308,16 @@ start:
  * Also knows about backslashes.
  * Bound to "M-]", "M-)" and "M-}".
  */
-forw_brace(f, n)
+int forw_brace(f, n)
 {
 	register char	ch;
-	register char	oldch;
+	register char	oldch='\0';
 	register int	doto;
 	register LINE	*dotp;
 	register int	quoted;
 	register int	comment;
 	int	depth, status;
-	char	older, quote;
+	char	older, quote='\0';
 	char	stack[128];
 
 	status = TRUE;
@@ -393,16 +393,16 @@ forw_brace(f, n)
  * then for corresponding opening brace.
  * Bound to "M-[", "M-(" and "M-{".
  */
-back_brace(f, n)
+int back_brace(f, n)
 {
 	register char	ch;
-	register char	oldch;
+	register char	oldch='\0';
 	register int	doto;
 	register LINE	*dotp;
 	register int	quoted;
 	register int	comment;
 	int	depth, status;
-	char	older, quote;
+	char	older, quote='\0';
 	char	stack[128];
 
 	status = TRUE;

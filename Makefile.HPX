@@ -1,4 +1,4 @@
-# Makefile for me on a HP9000 with HP-UX 10.20
+# Makefile for MEX on a HP9000 with HP-UX 10.20
 
 CFLAGS= -Aa -O -D_HPUX_SOURCE
 LFLAGS= -s
@@ -6,8 +6,8 @@ LIBS=   -lcurses
 OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o \
 	search.o term.o window.o word.o
 
-me: $(OBJ)
-	cc -o me $(LFLAGS) $(OBJ) $(LIBS)
+mex: $(OBJ)
+	cc -o mex $(LFLAGS) $(OBJ) $(LIBS)
 
 buffer.o: buffer.c ed.h
 	cc $(CFLAGS) -c buffer.c
@@ -51,9 +51,9 @@ word.o: word.c ed.h
 help.c: help_c.eng
 	-ln -f $? $@
 
-install: me
-	strip me
-	su bin -c "cp me /usr/local/bin"
+install: mex
+	strip mex
+	su bin -c "cp mex /usr/local/bin"
 
 clean:
-	rm -f *.o core me help.c curkeys.h
+	rm -f *.o core mex help.c curkeys.h

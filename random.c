@@ -7,8 +7,7 @@
 #include	<stdio.h>
 #include	"ed.h"
 
-extern int	kused;
-extern int	gotobuf();
+extern int kused;
 
 /* mb: added function to toggle insert/overstrike */
 
@@ -39,7 +38,7 @@ casestog(f,n)
 /*
  * Set fill column to n.   mb: added the ifs.
  */
-setfillcol(f, n)
+int setfillcol(f, n)
 {
 	if (n==1)  n=0;
 	if ( (n!=0) && (n < lmargin + tabsize) ) {
@@ -55,7 +54,7 @@ setfillcol(f, n)
 /*
  * Set lmargin to n. mb: added.
  */
-setlmargin(f, n)
+int setlmargin(f, n)
 {
 	if (n==1)  n=0;
 	if ( (n!=0) && (n > fillcol - tabsize) ) {
@@ -77,15 +76,14 @@ setlmargin(f, n)
  * be used on an infinite width display. Normally this
  * is bound to "C-X =".
  */
-showcpos(f, n)
+int showcpos(f, n)
 {
 	register LINE	*clp;
 	register int	cbo;
 	register long	nch;
 	register long	nbc;
 	register int	nli; 	/* mb: line-no. counter */
-	int	cac, ratio, col;  /* mb: were register */
-	/* mb: deleted i,c; */
+	int	cac=0, ratio, col;  /* mb: were register */
 
 	clp = lforw(curbp->b_linep);		/* Grovel the data.	*/
 	cbo = 0;
@@ -123,7 +121,7 @@ showcpos(f, n)
 /*
  * Return current column.  Stop at first non-blank given TRUE argument.
  */
-getccol(bflg)
+int getccol(bflg)
 int bflg;
 {
 	register int c, i, col;
@@ -151,7 +149,7 @@ int bflg;
  * to "C-T". This always works within a line, so
  * "WFEDIT" is good enough.
  */
-twiddle(f, n)
+int twiddle(f, n)
 {
 	register LINE	*dotp;
 	register int	doto;
@@ -179,7 +177,7 @@ twiddle(f, n)
  * tab (in ASCII) has been turned into "C-I" (in 10
  * bit code) already. Bound to "C-I".
  */
-tab(f, n)		/* mb: simplified */
+int tab(f, n)		/* mb: simplified */
 	register int n;
 {
 	if (n < 1)
@@ -204,7 +202,7 @@ tab(f, n)		/* mb: simplified */
  * procerssors. They even handle the looping. Normally
  * this is bound to "C-O".
  */
-openline(f, n)
+int openline(f, n)
 {
 	register int	i;
 	register int	s;
@@ -232,9 +230,8 @@ openline(f, n)
  * as critical if screen update were a lot
  * more efficient.
  */
-newline(f, n)
+int tnewline(f, n)
 {
-	register int	nicol;
 	register LINE	*lp;
 	register int	s;
 
@@ -264,7 +261,7 @@ newline(f, n)
  * blank lines after the line. Normally this command
  * is bound to "C-X C-O". Any argument is ignored.
  */
-deblank(f, n)
+int deblank(f, n)
 {
 	register LINE	*lp1;
 	register LINE	*lp2;
@@ -296,10 +293,9 @@ deblank(f, n)
  * of the subcommands failed. Normally bound
  * to "C-J".
  */
-indent(f, n)
+int indent(f, n)
 {
 	register int	nicol;
-	register int	c;
 	register int	i;
 
 	if (n < 0)
@@ -325,7 +321,7 @@ indent(f, n)
  * Normally bound to "C-D".
  * mb: generalized for n<0.
  */
-forwdel(f, n)
+int forwdel(f, n)
 {
 	int s;
 
@@ -341,7 +337,7 @@ forwdel(f, n)
  * mb: simplified.
  * Bound to "C-H" and also may be called by fbdel().
  */
-backdel(f, n)
+int backdel(f, n)
 {
 	return (forwdel(f, -n));
 }
@@ -357,7 +353,7 @@ backdel(f, n)
  * kills backwards that number of newlines. Normally
  * bound to "C-K".
  */
-killtxt(f, n)
+int killtxt(f, n)
 {
 	register int	chunk, s;
 	register LINE	*nextp;
@@ -390,7 +386,7 @@ killtxt(f, n)
 
 /* mb: added.
  */
-bkill(f, n)
+int bkill(f, n)
 {
 	return (killtxt(TRUE, 0));
 }
@@ -406,7 +402,7 @@ bkill(f, n)
  * return also happens when a carriage return is
  * yanked back from the kill buffer.
  */
-yank(f, n)
+int yank(f, n)
 {
 	register int	c, i, reframe;
 
@@ -420,7 +416,7 @@ yank(f, n)
 		i = 0;
 		while ((c=kremove(i++)) >= 0) {
 			if (c == '\n') {
-				if (newline(FALSE, 1) != TRUE)
+				if (tnewline(FALSE, 1) != TRUE)
 					return (FALSE);
 			} else {
 				if (linsert(1, c, 0) != TRUE)
@@ -441,7 +437,7 @@ yank(f, n)
  * Deletes backwards kused chars.
  * Bound to C-X C-Y.
  */
-unyank(f, n)
+int unyank(f, n)
 {
 	if ((lastflag&CFYANK) == 0)	/* If last command wasn't Yank */
 		return (FALSE);
@@ -451,7 +447,7 @@ unyank(f, n)
 /* mb: added.
  * Bound to E-Y.
  */
-flush_kbuf(f, n)
+int flush_kbuf(f, n)
 {
 	register int s, wflag;
 	BUFFER	*bp;
@@ -643,4 +639,3 @@ undo(f, n)
 	else
 		return (ABORT);
 }
-

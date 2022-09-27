@@ -8,12 +8,67 @@
 #include	"ed.h"
 
 extern LINE	*lalloc();
-extern int 	lchange();
 extern int 	linsert();
-extern int 	kdelete();
 extern char	*kbufp;
 extern int	kused;
 extern int	ksize;
+
+/*
+ * mb: added.
+ * Insert tabs and spaces to indent by lmargin.
+ */
+int
+do_margin()
+{
+	int  i, s;
+
+	s = TRUE;
+	i = lmargin / tabsize;
+	if (i)
+		s = linsert(i, '\t', 0);
+	i = lmargin % tabsize;
+	if ((s==TRUE) && i)
+		s = linsert(i,  ' ', 0);
+	return (s);
+}
+
+/*
+ * Return TRUE if the character at dot
+ * is a character that is considered to be
+ * part of a word. If 'wrap'==TRUE that includes
+ * the chars *.,+-'"?!()[] (for wordwrap).
+ */
+int
+inword(wrap)
+	register int	wrap;
+{
+	register int	c;
+	register char	*p;
+
+	if (curwp->w_doto >= llength(curwp->w_dotp))
+		return (FALSE);
+	c = lgetc(curwp->w_dotp, curwp->w_doto);
+	if ((c>='a' && c<='z')
+	 || (c>='A' && c<='Z')
+	 || (c=='_' || c=='$')
+	 || (c>='0' && c<='9'))
+		return (TRUE);
+	for (p=INWORDM;	*p; p++) {
+		if (*p == c)
+			return (TRUE);
+	}
+#if AtST
+	if (c & 0x80)		/* foreign characters */
+		return (TRUE);
+#endif
+	if (wrap) {
+		for (p=INWORDW;	*p; p++) {
+			if (*p == c)
+				return (TRUE);
+		}
+	}
+	return (FALSE);
+}
 
 /*
  * Word wrap.  mb: rewritten.
@@ -44,7 +99,7 @@ void wrapword(c)
 			if (forwdel(FALSE, 1) != TRUE)  return;
 			--count;
 		}
-		if (newline(FALSE, 1) != TRUE)  return;
+		if (tnewline(FALSE, 1) != TRUE)  return;
 		if (do_margin() != TRUE)  return;
 	}
 	while (--count > 0)
@@ -56,7 +111,7 @@ void wrapword(c)
 /*
  * mb: added.
  */
-forwparag(f, n)
+int forwparag(f, n)
 {
 	register LINE	*dlp;
 
@@ -71,7 +126,7 @@ forwparag(f, n)
 	return (TRUE);
 }
 
-backparag(f, n)
+int backparag(f, n)
 {
 	register LINE	*tlp;
 	register LINE	*dlp;
@@ -105,7 +160,7 @@ LINE *falloc(lp, size)
 	register LINE *nlp;
 	register char *cp;
 	register int  i;
-	int  nt, ns;
+	int  nt=0, ns=0;
 
 	if (size == 0) {
 		nt = lmargin / tabsize;
@@ -301,7 +356,8 @@ reformat(f,n)
  * routines. Error if you try to move beyond
  * the buffers.
  */
-backword(f, n)
+int forwword(int f, int n);
+int backword(f, n)
 {
 	if (n < 0)
 		return (forwword(f, -n));
@@ -326,7 +382,7 @@ backword(f, n)
  * motion is done by "forwchar". Error if you
  * try and move beyond the buffer's end.
 */
-forwword(f, n)
+int forwword(f, n)
 {
 	if (n < 0)
 		return (backword(f, -n));
@@ -344,42 +400,9 @@ forwword(f, n)
 }
 
 /*
- * Move the cursor forward by
- * the specified number of words. As you move,
- * convert any characters to upper case. Error
- * if you try and move beyond the end of the
- * buffer. Bound to "M-U". mb: cut off from the meat.
- */
-upperword(f, n)
-{
-	return( caseword(f, n, TRUE, FALSE) );
-}
-
-/*
- * mb: drastically simplified
- */
-lowerword(f, n)
-{
-	return( caseword(f, n, FALSE, FALSE) );
-}
-
-/*
- * Move the cursor forward by
- * the specified number of words. As you move
- * convert the first character of the word to upper
- * case, and subsequent characters to lower case. Error
- * if you try and move past the end of the buffer.
- * Bound to "M-C".  mb: drastically simplified.
- */
-capword(f, n)
-{
-	return( caseword(f, n, FALSE, TRUE) );
-}
-
-/*
  * mb: the common part of upperword() & lowerword():
  */
-caseword(f, n, touc, cap)
+int caseword(f, n, touc, cap)
 	register int	touc;
 	register int	cap;
 {
@@ -418,13 +441,46 @@ caseword(f, n, touc, cap)
 }
 
 /*
+ * Move the cursor forward by
+ * the specified number of words. As you move,
+ * convert any characters to upper case. Error
+ * if you try and move beyond the end of the
+ * buffer. Bound to "M-U". mb: cut off from the meat.
+ */
+int upperword(f, n)
+{
+	return( caseword(f, n, TRUE, FALSE) );
+}
+
+/*
+ * mb: drastically simplified
+ */
+int lowerword(f, n)
+{
+	return( caseword(f, n, FALSE, FALSE) );
+}
+
+/*
+ * Move the cursor forward by
+ * the specified number of words. As you move
+ * convert the first character of the word to upper
+ * case, and subsequent characters to lower case. Error
+ * if you try and move past the end of the buffer.
+ * Bound to "M-C".  mb: drastically simplified.
+ */
+int capword(f, n)
+{
+	return( caseword(f, n, FALSE, TRUE) );
+}
+
+/*
  * Kill forward by "n" words.
  * Remember the location of dot. Move forward
  * by the right number of words. Put dot back where
  * it was and issue the kill command for the
  * right number of characters. Bound to "M-D".
  */
-delfword(f, n)
+int delfword(f, n)
 {
 	register int	size;
 	register LINE	*dotp;
@@ -494,61 +550,4 @@ fbwdel(f, n)
 		return (delbword(f, n));
 	else
 		return (delfword(f, n));
-}
-
-/*
- * Return TRUE if the character at dot
- * is a character that is considered to be
- * part of a word. If 'wrap'==TRUE that includes
- * the chars *.,+-'"?!()[] (for wordwrap).
- */
-int
-inword(wrap)
-	register int	wrap;
-{
-	register int	c;
-	register char	*p;
-
-	if (curwp->w_doto >= llength(curwp->w_dotp))
-		return (FALSE);
-	c = lgetc(curwp->w_dotp, curwp->w_doto);
-	if ((c>='a' && c<='z')
-	 || (c>='A' && c<='Z')
-	 || (c=='_' || c=='$')
-	 || (c>='0' && c<='9'))
-		return (TRUE);
-	for (p=INWORDM;	*p; p++) {
-		if (*p == c)
-			return (TRUE);
-	}
-#if AtST
-	if (c & 0x80)		/* foreign characters */
-		return (TRUE);
-#endif
-	if (wrap) {
-		for (p=INWORDW;	*p; p++) {
-			if (*p == c)
-				return (TRUE);
-		}
-	}
-	return (FALSE);
-}
-
-/*
- * mb: added.
- * Insert tabs and spaces to indent by lmargin.
- */
-int
-do_margin()
-{
-	int  i, s;
-
-	s = TRUE;
-	i = lmargin / tabsize;
-	if (i)
-		s = linsert(i, '\t', 0);
-	i = lmargin % tabsize;
-	if ((s==TRUE) && i)
-		s = linsert(i,  ' ', 0);
-	return (s);
 }

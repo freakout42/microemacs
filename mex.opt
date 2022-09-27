@@ -3,7 +3,7 @@ buffer.obj+cursor.obj+display.obj+files.obj+
 globargs.obj+
 help.obj+line.obj+main.obj+random.obj+
 search.obj+term.obj+window.obj+word.obj
-me
+mex
 /x/c
 ..\tc\lib\emu.lib+
 ..\tc\lib\cc.lib

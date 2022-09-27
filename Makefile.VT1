@@ -1,15 +1,19 @@
-# Makefile for me on Linux
+# Makefile for MEX on Linux
 
 # Linux/dietc
 CC=diet cc
 CFLAGS= -O -DVT100 -Dlinux2
+
+# Solaris/GCC
+#CC=gcc
+#CFLAGS= -O3 -DVT100 -Dlinux2
 
 LFLAGS= -static
 LIBS=   
 OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o \
 	search.o term.o window.o word.o
 
-me: $(OBJ)
+mev: $(OBJ)
 	$(CC) -o $@ $(LFLAGS) $(OBJ) $(LIBS)
 	strip $@
 
@@ -52,9 +56,9 @@ word.o: word.c ed.h
 help.c: help_c.eng
 	-ln -f $? $@
 
-install: me
-	strip me
-	su bin -c "cp me /usr/local/bin"
+install: mex
+	strip mex
+	su bin -c "cp mex /usr/local/bin"
 
 clean:
-	rm -f *.o core me curkeys.h help.c
+	rm -f *.o core mex curkeys.h help.c

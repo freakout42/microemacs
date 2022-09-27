@@ -11,7 +11,7 @@
 
 char *help_menu[] = {
 " ",
-"\t\tme version " VERSION,
+"\t\tMEX version " VERSION,
 " ",
 "\tCursor control\t\t\tInsert and delete",
 "\tMoving and copying\t\tSearching",
@@ -19,7 +19,7 @@ char *help_menu[] = {
 "\tBuffers\t\t\t\tDisk Files",
 "\tWindow control\t\t\tEntering strings",
 "\tAlternate character set\t\tOther stuff",
-"\tFormatting\t\t\tQuitting me",
+"\tFormatting\t\t\tQuitting MEX",
 ""
 };
 
@@ -154,10 +154,10 @@ char *formatting[] = {
 
 char *quitting[] = {
 " ",
-"Invoking me:  me [options][-h for help] [file(s)]",
+"Invoking MEX:  mex [options][-h for help] [file(s)]",
 " ",
-"\t^C     Exit me",
-"\t^Z     Save this buffer if changed, then Exit me",
+"\t^C     Exit MEX",
+"\t^Z     Save this buffer if changed, then Exit MEX",
 " ",
 "\tAlt-7  Play back log file (stop logging, replay it now)",
 ""
@@ -217,7 +217,7 @@ char *enter_str[] = {
 
 char *help_menu[] = {
 " ",
-"\t\tme version " VERSION,
+"\t\tMEX version " VERSION,
 " ",
 "\tCursor control\t\t\tInsert and delete",
 "\tMoving and copying\t\tSearching",
@@ -225,7 +225,7 @@ char *help_menu[] = {
 "\tBuffers\t\t\t\tDisk Files",
 "\tWindow control\t\t\tEntering strings",
 "\tAlternate character set\t\tOther stuff",
-"\tFormatting\t\t\tQuitting me",
+"\tFormatting\t\t\tQuitting MEX",
 ""
 };
 
@@ -357,10 +357,10 @@ char *formatting[] = {
 
 char *quitting[] = {
 " ",
-"Invoking me:  me [options][-h for help] [file(s)]",
+"Invoking MEX:  mex [options][-h for help] [file(s)]",
 " ",
-"\t^C     Exit me",
-"\t^Z     Save this buffer if changed, then Exit me",
+"\t^C     Exit MEX",
+"\t^Z     Save this buffer if changed, then Exit MEX",
 " ",
 "\tAlt-7  Play back log file (stop logging, replay it now)",
 ""
@@ -420,9 +420,9 @@ char *enter_str[] = {
 
 char *help_menu[] = {
 " ",
-"       me version " VERSION,
+"       MEX version " VERSION,
 " ",
-"Quitting me",
+"Quitting MEX",
 "Cursor control        Insert and delete",
 "Moving and copying    Searching",
 "Transposition, caps   Unprintable characters",
@@ -573,13 +573,13 @@ char *formatting[] = {
 
 char *quitting[] = {
 " ",
-"Invoking me:  me [options][-h for help] [file(s)]",
+"Invoking MEX:  mex [options][-h for help] [file(s)]",
 " ",
-"^C     Exit me",
-"^Z     Write out this buffer if changed, then Exit me",
+"^C     Exit MEX",
+"^Z     Write out this buffer if changed, then Exit MEX",
 " ",
 "^X!    Send one command to the operating system and return",
-"^X^C   Start a new command processer, suspending me",
+"^X^C   Start a new command processer, suspending MEX",
 " ",
 "^X&    Play back log file (stop logging, replay it now)",
 ""
@@ -626,12 +626,11 @@ char *enter_str[] = {
  * everything works. Returns FALSE if there is
  * an error (if there is no memory).
  */
-make_help(buffer, data)
+int make_help(buffer, data)
 	BUFFER	*buffer;
 	char	*data[];	/* array of strings */
 {
 	register char	**dp;
-	register int	s;
 
 	bbclear(buffer);		/* Blow old text away */
 	for(dp=data; **dp != '\0'; ++dp) {
@@ -645,7 +644,7 @@ make_help(buffer, data)
  * Show help menu and then requested screens.
  * Bound to "E-?". By mb:
  */
-help(f, n)
+int help(f, n)
 {
 	register int  c = 'Y';
 	register char **helpscrn;

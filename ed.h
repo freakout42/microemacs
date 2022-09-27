@@ -1,4 +1,4 @@
-/* $Id: ed.h,v 1.34 2020/06/22 17:41:18 axel Exp $
+/* $Id: ed.h,v 1.40 2022/08/30 08:04:44 axel Exp $
  * This file is the general header file for
  * all parts of the MicroEMACS display editor. It contains
  * definitions used by everyone, and it contains the stuff
@@ -8,7 +8,7 @@
  * which were changed to char.
  * um: for UN*X System V set the defines V7 ``and'' SYS_V to 1 !!
  */
-#define VERSION "4.5"
+#define VERSION "5.0"
 
 #if (VT100)
 #define V7      1                       /* V7 UN*X or Coherent          */
@@ -425,3 +425,47 @@ void	mlwrite(char *fmt, ...);
 #include <string.h>
 #endif
 
+void makename(char *bname, char *fname);
+void lfree(LINE *lp);
+void bbclear(BUFFER *bp);
+int mlyesno(char *msg);
+int mlreply(char *prompt, char *dflt, char *buf, int width, int doesc);
+void update(int visiplay);
+int ctrlg();
+void lchange(int flag);
+int kinsert(int c);
+int ldelete(int n, int kflag);
+void kdelete();
+void movecursor(int row, int col);
+int ttopen();
+int ttclose();
+void mlerase();
+void gotobuf(BUFFER *bp);
+void freebuf(BUFFER *bp);
+int bclear(BUFFER *bp);
+int onlywind(int f, int n);
+int getkey();
+int make_popup(BUFFER *buffer, int (*prepare)(), char *data[]);
+int addline(char *text, BUFFER *bp);
+void dtmpbufs();
+void vttidy();
+int anycb();
+void flushlog(int flag);
+int putlog(int c);
+int ropenlog(); 
+int getlog();
+int wopenlog();
+void closelogf();
+int linsert(int n, int c, int overstrike);
+int readin(char *fname);
+void cpyfname (char *bname, char *fname);
+void vtinit();
+int reposition(int f, int n);
+int kremove(int n);
+int forwchar(int f, int n);
+int backchar(int f, int n);
+int lnewline();
+int getccol(int bflg);
+int forwpage(int f, int n);
+int tnewline(int f, int n);
+int forwdel(int f, int n);

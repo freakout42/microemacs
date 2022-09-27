@@ -24,6 +24,153 @@
 extern int ctrlg();
 
 /*
+ * file fileio.c:
+ *
+ * mb: Atari ST stuff & BFILES added.
+ *
+ * The routines in this file
+ * read and write ASCII files from the
+ * disk. All of the knowledge about files
+ * are here. A better message writing
+ * scheme should be used.
+ */
+
+#if BFILES
+static	char	fbufp[FBLOCK];	/* File text buffer			*/
+static	char	*fbpos;		/* Current position in file text buffer	*/
+static	char	*ftail;		/* End of file text buffer		*/
+static	int	oldbfc = EOF;	/* for bungetc				*/
+#if (AtST | MSDOS)
+static	int	handle = (-1);
+static	long	fsize;
+#endif
+#else
+static	FILE	*ffp;		/* File pointer, all functions. */
+#endif
+
+#if AtST
+long
+getfsize(fn)
+	char *fn;
+{
+	int  dtabuf[22];
+	Fsetdta(dtabuf);		/* tell GEMDOS where to put data */
+	if (Fsfirst(fn, 0) != 0)	/* get the data */
+		return (-1L);		/* file not found */
+	return(*(long *)(&dtabuf[13]));	/* isolate the file size data */
+}
+#endif
+
+#if BFILES
+bputc(c)
+	register int c;
+{
+	if (fbpos >= ftail) {	/* RAM full, write it out */
+#if AtST
+		if (Fwrite(handle, (long)FBLOCK, fbufp) != FBLOCK)
+			return (EOF);
+#endif
+#if MSDOS
+		if (_write (handle, fbufp, (int)FBLOCK) != FBLOCK)
+			return (EOF);
+#endif
+		fbpos = fbufp;
+	}
+	*fbpos++ = (char) c;
+	return (c);
+}
+#endif
+
+/*
+ * Read a line from a file,
+ * and store the bytes in the supplied
+ * buffer. The "nbuf" is the length of the
+ * buffer. Complain about long lines and lines
+ * at the end of the file that don't have a
+ * newline present. Check for I/O errors
+ * too. Return status.
+ */
+#if BFILES
+int
+bgetc()
+{
+	long	size;
+	int	c, isize;
+
+	if (oldbfc != EOF) {
+		c = oldbfc;
+		oldbfc = EOF;
+		return (c);
+	}
+#if AtST
+	if (fbpos >= ftail) {
+		if (fsize <= 0)
+			return (EOF);	/* no error */
+		size = (long) FBLOCK;
+		if (fsize < (long) FBLOCK)
+			size = fsize;
+		if (Fread(handle, size, fbufp) == size) {
+			fsize -= size;	/* what's left to read */
+			fbpos = fbufp;
+			ftail = fbufp + size;
+		} else {
+			return (EOF);	/* error */
+		}
+	}
+#endif
+#if MSDOS
+	if (fbpos >= ftail) {
+		if (fsize <= 0)
+			return (EOF);	/* no error */
+		isize = (int) FBLOCK;
+		if (fsize < (long) FBLOCK)
+			isize = (int) fsize;
+		if (_read (handle, fbufp, isize) != isize)
+			return (EOF);	/* error */
+		fsize -= (long) isize;	/* what's left to read */
+		fbpos = fbufp;
+		ftail = fbufp + isize;
+	}
+#endif
+#if (V7 | VMS | CPM)
+		return (EOF);
+#endif
+
+	return (*fbpos++);
+}
+int
+bungetc(c)
+	int c;
+{
+	oldbfc = c;
+}
+#endif
+
+/*
+ * mb: Copy a file name, possibly converting to lowercase.
+ */
+void cpyfname (bname, fname)
+char    bname[];
+char    fname[];
+{
+	register char   *cp1;
+	register char   *cp2;
+	register char	c;
+
+	cp1 = &fname[0];
+	cp2 = &bname[0];
+	while (cp2!=&bname[NFILEN-1] && *cp1!=0) {
+		c = *cp1++;
+#if (V7 == 0)
+		if (c >= 'A' && c <= 'Z')
+			c += 'a' - 'A';
+#endif
+		*cp2++ = c;
+	}
+	*cp2 = 0;
+}
+
+/*
  * mb: common code for fileread() and filevisit().
  */
 
@@ -39,11 +186,11 @@ addfile (fname)  char *fname;  {
 	return (FALSE);
 }
 
-choosefile(prompt, fname, flag)
+int choosefile(prompt, fname, flag)
 	char	*prompt, *fname;
 	int	flag;
 {
-	register char	*cp, *dflt;
+	register char	*dflt;
 	int	s, old;
 #if ST_DA
 	char	path[90];
@@ -111,121 +258,263 @@ start:
 }
 
 /*
- * Read a file into the current
- * buffer. This is really easy; all you do it
- * find the name of the file, and call the standard
- * "read a file into the current buffer" code.
- * Bound to "C-X C-R".   mb: added keep&insert stuff.
+ * Open a file for reading.
  */
-fileread(f, n)
+int ffropen(fn)
+char    *fn;
 {
-	register BUFFER	*bp;
-	register int	s, ins;
-	char	fname[NFILEN];
+#if BFILES
 
-	bp = curbp;
-	if (lforw(bp->b_linep) != bp->b_linep) {	/* buf not empty */
-		ins = mlyesno("Keep current text", fname, NFILEN);
-		if (ins == ABORT)
-			return (ctrlg());
-		if (ins != TRUE) {
-			if ((s=bclear(bp)) != TRUE)
-				return (s);
-		}
-	} else
-		ins = FALSE;
+#if AtST
+	if ((fsize = getfsize(fn)) <= 0L)
+		return (FIOFNF);
+	if ((handle = (int) Fopen(fn, 0)) < 0)
+		return (FIOERR);
+	fbpos = fbufp;
+	ftail = fbufp;			/* nothing read yet */
+	return (FIOSUC);
+#endif
+#if MSDOS
+	struct stat filestat;
 
-	if (choosefile("File to read", fname, TRUE) != TRUE) {
-		bp->b_fname[0] = '\0';	  /* mb: not that file anymore! */
-		curwp->w_flag |= WFMODE;
-		return (ctrlg());
-	}
-	if ((s=readin(fname)) != FIOEOF)
-		return (FALSE);
-	bp->b_flag &= ~BFTEMP;
-	if (ins)
-		bp->b_flag |= BFCHG;
-	else {
-		cpyfname (bp->b_fname, fname);
-		bp->b_flag &= ~BFCHG;
-	}
-	bp->b_flag |= BFEDIT;			/* read for editing */
-	return (TRUE);  
+	if ((handle = _open (fn, O_RDONLY)) < 0)
+		return (FIOFNF);
+	if (fstat (handle, &filestat))
+		return (FIOERR);
+	fsize = filestat.st_size;
+	fbpos = fbufp;
+	ftail = fbufp;			/* nothing read yet */
+	return (FIOSUC);
+#endif
+#if (V7 | VMS | CPM)
+	return (FIOERR);
+#endif
+
+#else	/* if not BFILES */
+
+#if AtST
+	if ((ffp=fopen(fn, "br")) == NULL)  /* we handle crlf ourselves */
+#else
+	if ((ffp=fopen(fn, "r")) == NULL)
+#endif
+		return (FIOFNF);
+	return (FIOSUC);
+#endif
+}
+
+static	int		longline;
+static	int		foreignformat;
+
+/*
+ * Open a file for writing.
+ * Return TRUE if all is well, and
+ * FALSE on error (cannot create).
+ */
+int ffwopen(fn)
+char    *fn;
+{
+#if BFILES
+#if AtST
+	if ((handle = Fcreate(fn, 0)) < 0L)
+		return (FIOERR);
+	fbpos = fbufp;
+	ftail = fbufp + FBLOCK;
+	return (FIOSUC);
+#endif
+#if MSDOS
+	if ((handle = _creat (fn, 0)) < 0)
+		return (FIOERR);
+	fbpos = fbufp;
+	ftail = fbufp + FBLOCK;
+	return (FIOSUC);
+#endif
+#if (V7 | VMS | CPM)
+	return (FIOERR);
+#endif
+#else
+#if	VMS
+	register int    fd;
+
+	if ((fd=creat(fn, 0666, "rfm=var", "rat=cr")) < 0
+	|| (ffp=fdopen(fd, "w")) == NULL)
+		return (FIOERR);
+#else
+	if ((ffp=fopen(fn, "w")) == NULL)
+		return (FIOERR);
+#endif
+	return (FIOSUC);
+#endif
 }
 
 /*
- * Select a file for editing.
- * Look around to see if you can find the
- * file in another buffer; if you can find it
- * just switch to the buffer.
- * Else, create a new buffer, read in the
- * text, and switch to the new buffer.
- * Bound to C-X C-V.
- * mb: combined "out" portion of new & old cases,
- *	added "fileindex" stuff.
+ * Close an output file.
+ * Should look at the status in all systems.
  */
-filevisit(f, n)
+int fwclose()
 {
-	register BUFFER *bp;
-	register WINDOW *wp;
-	register LINE   *lp;
-	char		fname[NFILEN];
-	char		bname[NBUFN];
-	char		tname[NBUFN];
-	int		s, old;
-	char		*msg;
-	LINE		*flp, *fdp;
+#if BFILES
+	long size;
+	int  isize;
 
-	if (choosefile("File to visit", fname, FALSE) != TRUE)
-		return (ctrlg());
+	if (handle < 0)
+		return (FIOERR);
 
-	old = FALSE;
-	for (bp=bheadp; bp!=NULL; bp=bp->b_bufp) {
-		if ((bp->b_flag&BFTEMP)==0 && strcmp(bp->b_fname, fname)==0) {
-			old = TRUE;
+#if AtST
+	size = (fbpos - fbufp);
+	if (size > 0L) {	/* something to write out */
+		if (Fwrite(handle, size, fbufp) != size) {
+			mlwrite("Write error");
+			return (FIOERR);
+		}
+	}
+	if (Fclose(handle) < 0L) {
+		mlwrite("Error closing file - SAVE BUFFER! - FILE COULD BE VANISHED!");
+		return(FIOERR);
+	}
+#endif
+#if MSDOS
+	isize = (int)(fbpos - fbufp);
+	if (isize > 0) {	/* something to write out */
+		if (_write (handle, fbufp, isize) != isize) {
+			mlwrite("Write error");
+			return (FIOERR);
+		}
+	}
+	if (_close (handle) != 0) {
+		mlwrite("Error closing file - SAVE BUFFER! - FILE COULD BE VANISHED!");
+		return(FIOERR);
+	}
+#endif
+	handle = (-1);
+#else
+#if     V7
+	if (fclose(ffp) != FALSE) {
+		mlwrite("Error closing file - SAVE BUFFER! - FILE COULD BE VANISHED!");
+		return(FIOERR);
+	}
+#else
+#if     AtST
+	if (ffp != NULL && fclose(ffp) != FALSE) {
+		mlwrite("Error closing file - SAVE BUFFER! - FILE COULD BE VANISHED!");
+		return (FIOERR);
+	}
+#else
+	fclose(ffp);
+#endif
+#endif
+#endif
+	return (FIOSUC);
+}
+
+/*
+ * Close an input file.
+ */
+void frclose()
+{
+#if BFILES
+#if AtST
+	if (handle >= 0) {
+		Fclose(handle);
+		handle = (-1);
+	}
+#endif
+#if MSDOS
+	if (handle >= 0) {
+		_close (handle);
+		handle = (-1);
+	}
+#endif
+#else
+	fclose(ffp);
+#endif
+}
+
+int
+ffgetline(buf, nbuf)
+register char   buf[];
+register int    nbuf;
+{
+	register int    c, i, t;
+
+	i = 0;
+	--nbuf;
+#if BFILES
+	while ((c=bgetc()) != EOF) {
+		if (c == '\n') {
+			if ((t=bgetc()) != '\r')
+				bungetc(t);
+			break;
+		}
+		if (c == '\r') {
+			if ((t=bgetc()) != '\n')
+				bungetc(t);
+			c = '\n';
+			break;
+		}
+#else
+	while ((c=getc(ffp)) != EOF) {
+		if (c == '\n') {
+			if ((t=getc(ffp)) != '\r')
+				ungetc(t, ffp);
+#if MSDOS
+			if (!foreignformat) {
+				mlwrite("File is in UNIX format");
+				foreignformat = TRUE;
+				}
+#endif
+			break;
+		}
+		if (c == '\r') {
+			if ((t=getc(ffp)) != '\n')
+				ungetc(t, ffp);
+			c = '\n';
+#if !MSDOS
+			if (!foreignformat) {
+				mlwrite("File is in DOS format");
+				foreignformat = TRUE;
+				}
+#endif
+			break;
+		}
+#endif
+		buf[i++] = c;
+		if (i >= nbuf) {
+			if (!longline) {
+				t = mlyesno("File has long line: splitted - REALLY EDIT");
+				mlerase();
+				if (!t) return (FIOERR);
+				mlwrite("File has long line: splitted");
+				}
 			break;
 		}
 	}
-	if (old) goto out;
-
-	makename(bname, fname);			/* New buffer name.     */
-
-	while ((bp=bfind(bname, FALSE, 0)) != NULL) {
-		msg = "Buffer name (default: existing buffer!)";
-		strcpy (tname, bname);
-		s = mlreply(msg, tname, bname, NBUFN, FALSE);
-		if (s!=TRUE && s!=FALSE)
-			return (ctrlg());
-		if (strcmp(bname,tname)==0) {
-			if (bclear(bp) != TRUE)
-				return(FALSE);
-			break;
+	buf[i] = 0;
+	if (c == EOF) {
+#if BFILES
+		if (fsize != 0L) {
+#else
+		if (ferror(ffp) != FALSE) {
+#endif
+			mlwrite("File read error");
+			return (FIOERR);
 		}
-	}
-	if (bp==NULL && (bp=bfind(bname, TRUE, 0))==NULL)
-		return (FALSE);
-out:
-	flp = curwp->w_linep;
-	fdp = curwp->w_dotp;
-	gotobuf(bp);			/* mb: in buffer.c */
-	if (old)
-		mlwrite("[Old buffer]");
-	else {
-		if ((s=readin(fname)) != FIOEOF) {
-			bbclear(curbp);		/* free up text read	 */
-			gotobuf(oldbp);		/* back where we started */
-			/* now oldbp = abandoned (empty) visited buf */
-			freebuf(oldbp);
-			curwp->w_linep = flp;	/* mb: needed,		*/
-			curwp->w_dotp  = fdp;	/*   don't know why	*/
-			return (FALSE);
+		if (i != 0) {
+			if (i==1 && buf[0]==0x1A) {
+				buf[--i] = 0;
+				if (!foreignformat)
+				    mlwrite("dropped ^Z at EOF");
+				}
+			else	{
+				if (!foreignformat)
+				    mlwrite("missing newline appended at EOF");
+				else
+				    curbp->b_flag |= (BFTAIL);
+				}
+			return (FIOFUNNY);
 		}
-		cpyfname (bp->b_fname, fname);
-		bp->b_flag &= ~(BFTEMP|BFCHG|BFEDIT);
+		return (FIOEOF);
 	}
-/*	curwp->w_linep = bp->b_linep;		mb: now done in gotobuf() */
-	curwp->w_flag |= WFMODE|WFFORCE|WFHARD;
-	return (TRUE);
+	return (FIOSUC);
 }
 
 /*
@@ -235,9 +524,7 @@ out:
  * Also called by the mainline, to read in a file
  * specified on the command line as an argument.
  */
-static	int		longline;
-static	int		foreignformat;
-readin(fname)
+int readin(fname)
 char    fname[];
 {
 	register LINE   *lp1;
@@ -338,446 +625,6 @@ char    fname[];
 }
 
 /*
- * Take a file name, and from it
- * fabricate a buffer name. This routine knows
- * about the syntax of file names on the target system.
- * I suppose that this information could be put in
- * a better place than a line of code.
- */
-makename(bname, fname)
-char    bname[];
-char    fname[];
-{
-	register char   *cp1;
-	register char   *cp2;
-	register char	c;
-
-	cp1 = &fname[0];
-	while (*cp1 != 0)
-		++cp1;
-#if     VMS
-	while (cp1!=&fname[0] && cp1[-1]!=':' && cp1[-1]!=']')
-		--cp1;
-#endif
-#if     CPM
-	while (cp1!=&fname[0] && cp1[-1]!=':')
-		--cp1;
-#endif
-#if     MSDOS
-	while (cp1!=&fname[0] && cp1[-1]!=':' && cp1[-1]!='\\')
-		--cp1;
-#endif
-#if     AtST
-	while (cp1!=&fname[0] && cp1[-1]!=':' && cp1[-1]!='\\')
-		--cp1;
-#endif
-#if     V7
-	while (cp1!=&fname[0] && cp1[-1]!='/')
-		--cp1;
-#endif
-	cp2 = &bname[0];
-	while (cp2!=&bname[NBUFN-1] && *cp1!=0 && *cp1!=';') {
-		c = *cp1++;
-#if (V7 == 0)
-		if (c >= 'A' && c <= 'Z')
-			c += 'a' - 'A';
-#endif
-		*cp2++ = c;
-	}
-	*cp2 = 0;
-}
-
-/*
- * mb: Copy a file name, possibly converting to lowercase.
- */
-cpyfname (bname, fname)
-char    bname[];
-char    fname[];
-{
-	register char   *cp1;
-	register char   *cp2;
-	register char	c;
-
-	cp1 = &fname[0];
-	cp2 = &bname[0];
-	while (cp2!=&bname[NFILEN-1] && *cp1!=0) {
-		c = *cp1++;
-#if (V7 == 0)
-		if (c >= 'A' && c <= 'Z')
-			c += 'a' - 'A';
-#endif
-		*cp2++ = c;
-	}
-	*cp2 = 0;
-}
-
-/*
- * Ask for a file name, and write the
- * contents of the current buffer to that file.
- * Update the remembered file name and clear the
- * buffer changed flag. This handling of file names
- * is different from the earlier versions, and
- * is more compatible with Gosling EMACS than
- * with ITS EMACS. Bound to "C-X C-W".
- * mb: added default filename.
- */
-filewrite(f, n)
-{
-	register int    c;
-	int	s;
-	char	fname[NFILEN];
-	WINDOW 	*wp;
-
-	if (choosefile("File to write", fname, TRUE) != TRUE)
-		return (ctrlg());
-
-	if ((s=writeout(fname)) == TRUE) {
-		cpyfname (curbp->b_fname, fname);
-		curbp->b_flag &= ~BFCHG;
-		wp = wheadp;		/* Update mode lines. */
-		while (wp != NULL) {
-			if (wp->w_bufp == curbp)
-				wp->w_flag |= WFMODE;
-			wp = wp->w_wndp;
-		}
-	}
-	return (s);
-}
-
-/*
- * Save the contents of the current
- * buffer in its associatd file. No nothing
- * if nothing has changed (this may be a bug, not a
- * feature). Error if there is no remembered file
- * name for the buffer. Bound to "C-X C-S". May
- * get called by "C-Z".
- */
-filesave(f, n)
-{
-	register WINDOW *wp;
-	register int    s;
-
-	if ((curbp->b_flag&BFCHG) == 0)		/* Return, no changes.  */
-		return (TRUE);
-	if (curbp->b_fname[0] == 0) {		/* Must have a name.    */
-		mlwrite("Need a file name");
-		return (FALSE);
-	}
-	if ((s=writeout(curbp->b_fname)) == TRUE) {
-		curbp->b_flag &= ~BFCHG;
-		wp = wheadp;			/* Update mode lines.   */
-		while (wp != NULL) {
-			if (wp->w_bufp == curbp)
-				wp->w_flag |= WFMODE;
-			wp = wp->w_wndp;
-		}
-	}
-	return (s);
-}
-
-/*
- * This function performs the details of file
- * writing. Uses the file management routines in the
- * "fileio.c" package. The number of lines written is
- * displayed. Sadly, it looks inside a LINE; provide
- * a macro for this. Most of the grief is error
- * checking of some sort.
- */
-writeout(fn)
-char    *fn;
-{
-	register int    s;
-	register LINE   *lp;
-	register int    nline;
-	register int	shortit;
-
-	if (playback == TRUE)	/* mb: no file output from playback */
-		return(TRUE);
-
-	s = ffwopen(fn);
-	if (s != FIOSUC) {
-		mlwrite("Cannot open file for writing");
-		return (FALSE);
-	}
-
-	mlwrite("[writing file...]");
-	lp = lforw(curbp->b_linep);		/* First line.		*/
-	nline = 0;				/* Number of lines.	*/
-	while (lp != curbp->b_linep) {
-		shortit = ((curbp->b_flag&BFTAIL) && (lforw(lp) == curbp->b_linep)) ? 0 : 1;
-		if ((s=ffputline(&lp->l_text[0], llength(lp), shortit)) != FIOSUC)
-			break;
-		++nline;
-		lp = lforw(lp);
-	}
-	if (s == FIOSUC) {			/* No write error.      */
-		s = fwclose();
-		if (s == FIOSUC) {		/* No close error.      */
-			mlwrite("[Wrote %d line(s)]", nline);
-		}
-	} else					/* Ignore close error   */
-		fwclose();			/* if a write error.    */
-	if (s != FIOSUC)			/* Some sort of error.  */
-		return (FALSE);
-	return (TRUE);
-}
-
-/*
- * The command allows the user
- * to modify the file name associated with
- * the current buffer. It is like the "f" command
- * in UNIX "ed". The operation is simple; just zap
- * the name in the BUFFER structure, and mark the windows
- * as needing an update.
- */
-filename(f, n)
-{
-	register WINDOW *wp;
-	register int    s;
-	char		fname[NFILEN];
-
-	if (choosefile ("New filename", fname, TRUE) != TRUE)
-		return (ctrlg());
-	cpyfname (curbp->b_fname, fname);
-	curbp->b_flag |= BFEDIT;
-	wp = wheadp;				/* Update mode lines.   */
-	while (wp != NULL) {
-		if (wp->w_bufp == curbp)
-			wp->w_flag |= WFMODE;
-		wp = wp->w_wndp;
-	}
-	return (TRUE);
-}
-
-
-/*
- * file fileio.c:
- *
- * mb: Atari ST stuff & BFILES added.
- *
- * The routines in this file
- * read and write ASCII files from the
- * disk. All of the knowledge about files
- * are here. A better message writing
- * scheme should be used.
- */
-
-#if BFILES
-static	char	fbufp[FBLOCK];	/* File text buffer			*/
-static	char	*fbpos;		/* Current position in file text buffer	*/
-static	char	*ftail;		/* End of file text buffer		*/
-static	int	oldbfc = EOF;	/* for bungetc				*/
-#if (AtST | MSDOS)
-static	int	handle = (-1);
-static	long	fsize;
-#endif
-#else
-static	FILE	*ffp;		/* File pointer, all functions. */
-#endif
-
-#if AtST
-long
-getfsize(fn)
-	char *fn;
-{
-	int  dtabuf[22];
-	Fsetdta(dtabuf);		/* tell GEMDOS where to put data */
-	if (Fsfirst(fn, 0) != 0)	/* get the data */
-		return (-1L);		/* file not found */
-	return(*(long *)(&dtabuf[13]));	/* isolate the file size data */
-}
-#endif
-
-/*
- * Open a file for reading.
- */
-ffropen(fn)
-char    *fn;
-{
-#if BFILES
-
-#if AtST
-	if ((fsize = getfsize(fn)) <= 0L)
-		return (FIOFNF);
-	if ((handle = (int) Fopen(fn, 0)) < 0)
-		return (FIOERR);
-	fbpos = fbufp;
-	ftail = fbufp;			/* nothing read yet */
-	return (FIOSUC);
-#endif
-#if MSDOS
-	struct stat filestat;
-
-	if ((handle = _open (fn, O_RDONLY)) < 0)
-		return (FIOFNF);
-	if (fstat (handle, &filestat))
-		return (FIOERR);
-	fsize = filestat.st_size;
-	fbpos = fbufp;
-	ftail = fbufp;			/* nothing read yet */
-	return (FIOSUC);
-#endif
-#if (V7 | VMS | CPM)
-	return (FIOERR);
-#endif
-
-#else	/* if not BFILES */
-
-#if AtST
-	if ((ffp=fopen(fn, "br")) == NULL)  /* we handle crlf ourselves */
-#else
-	if ((ffp=fopen(fn, "r")) == NULL)
-#endif
-		return (FIOFNF);
-	return (FIOSUC);
-#endif
-}
-
-/*
- * Open a file for writing.
- * Return TRUE if all is well, and
- * FALSE on error (cannot create).
- */
-ffwopen(fn)
-char    *fn;
-{
-#if BFILES
-#if AtST
-	if ((handle = Fcreate(fn, 0)) < 0L)
-		return (FIOERR);
-	fbpos = fbufp;
-	ftail = fbufp + FBLOCK;
-	return (FIOSUC);
-#endif
-#if MSDOS
-	if ((handle = _creat (fn, 0)) < 0)
-		return (FIOERR);
-	fbpos = fbufp;
-	ftail = fbufp + FBLOCK;
-	return (FIOSUC);
-#endif
-#if (V7 | VMS | CPM)
-	return (FIOERR);
-#endif
-#else
-#if	VMS
-	register int    fd;
-
-	if ((fd=creat(fn, 0666, "rfm=var", "rat=cr")) < 0
-	|| (ffp=fdopen(fd, "w")) == NULL)
-		return (FIOERR);
-#else
-	if ((ffp=fopen(fn, "w")) == NULL)
-		return (FIOERR);
-#endif
-	return (FIOSUC);
-#endif
-}
-
-/*
- * Close an input file.
- */
-frclose()
-{
-#if BFILES
-#if AtST
-	if (handle >= 0) {
-		Fclose(handle);
-		handle = (-1);
-	}
-#endif
-#if MSDOS
-	if (handle >= 0) {
-		_close (handle);
-		handle = (-1);
-	}
-#endif
-#else
-	fclose(ffp);
-#endif
-}
-
-/*
- * Close an output file.
- * Should look at the status in all systems.
- */
-fwclose()
-{
-#if BFILES
-	long size;
-	int  isize;
-
-	if (handle < 0)
-		return (FIOERR);
-
-#if AtST
-	size = (fbpos - fbufp);
-	if (size > 0L) {	/* something to write out */
-		if (Fwrite(handle, size, fbufp) != size) {
-			mlwrite("Write error");
-			return (FIOERR);
-		}
-	}
-	if (Fclose(handle) < 0L) {
-		mlwrite("Error closing file - SAVE BUFFER! - FILE COULD BE VANISHED!");
-		return(FIOERR);
-	}
-#endif
-#if MSDOS
-	isize = (int)(fbpos - fbufp);
-	if (isize > 0) {	/* something to write out */
-		if (_write (handle, fbufp, isize) != isize) {
-			mlwrite("Write error");
-			return (FIOERR);
-		}
-	}
-	if (_close (handle) != 0) {
-		mlwrite("Error closing file - SAVE BUFFER! - FILE COULD BE VANISHED!");
-		return(FIOERR);
-	}
-#endif
-	handle = (-1);
-#else
-#if     V7
-	if (fclose(ffp) != FALSE) {
-		mlwrite("Error closing file - SAVE BUFFER! - FILE COULD BE VANISHED!");
-		return(FIOERR);
-	}
-#else
-#if     AtST
-	if (ffp != NULL && fclose(ffp) != FALSE) {
-		mlwrite("Error closing file - SAVE BUFFER! - FILE COULD BE VANISHED!");
-		return (FIOERR);
-	}
-#else
-	fclose(ffp);
-#endif
-#endif
-#endif
-	return (FIOSUC);
-}
-
-#if BFILES
-bputc(c)
-	register int c;
-{
-	if (fbpos >= ftail) {	/* RAM full, write it out */
-#if AtST
-		if (Fwrite(handle, (long)FBLOCK, fbufp) != FBLOCK)
-			return (EOF);
-#endif
-#if MSDOS
-		if (_write (handle, fbufp, (int)FBLOCK) != FBLOCK)
-			return (EOF);
-#endif
-		fbpos = fbufp;
-	}
-	*fbpos++ = (char) c;
-	return (c);
-}
-#endif
-
-/*
  * Write a line to the already
  * opened file. The "buf" points to the
  * buffer, and the "nbuf" is its length, less
@@ -829,156 +676,307 @@ register int    closeit;
 }
 
 /*
- * Read a line from a file,
- * and store the bytes in the supplied
- * buffer. The "nbuf" is the length of the
- * buffer. Complain about long lines and lines
- * at the end of the file that don't have a
- * newline present. Check for I/O errors
- * too. Return status.
+ * This function performs the details of file
+ * writing. Uses the file management routines in the
+ * "fileio.c" package. The number of lines written is
+ * displayed. Sadly, it looks inside a LINE; provide
+ * a macro for this. Most of the grief is error
+ * checking of some sort.
  */
-#if BFILES
-int
-bgetc()
+int writeout(fn)
+char    *fn;
 {
-	long	size;
-	int	c, isize;
+	register int    s;
+	register LINE   *lp;
+	register int    nline;
+	register int	shortit;
 
-	if (oldbfc != EOF) {
-		c = oldbfc;
-		oldbfc = EOF;
-		return (c);
+	if (playback == TRUE)	/* mb: no file output from playback */
+		return(TRUE);
+
+	s = ffwopen(fn);
+	if (s != FIOSUC) {
+		mlwrite("Cannot open file for writing");
+		return (FALSE);
 	}
-#if AtST
-	if (fbpos >= ftail) {
-		if (fsize <= 0)
-			return (EOF);	/* no error */
-		size = (long) FBLOCK;
-		if (fsize < (long) FBLOCK)
-			size = fsize;
-		if (Fread(handle, size, fbufp) == size) {
-			fsize -= size;	/* what's left to read */
-			fbpos = fbufp;
-			ftail = fbufp + size;
-		} else {
-			return (EOF);	/* error */
+
+	mlwrite("[writing file...]");
+	lp = lforw(curbp->b_linep);		/* First line.		*/
+	nline = 0;				/* Number of lines.	*/
+	while (lp != curbp->b_linep) {
+		shortit = ((curbp->b_flag&BFTAIL) && (lforw(lp) == curbp->b_linep)) ? 0 : 1;
+		if ((s=ffputline(&lp->l_text[0], llength(lp), shortit)) != FIOSUC)
+			break;
+		++nline;
+		lp = lforw(lp);
+	}
+	if (s == FIOSUC) {			/* No write error.      */
+		s = fwclose();
+		if (s == FIOSUC) {		/* No close error.      */
+			mlwrite("[Wrote %d line(s)]", nline);
 		}
-	}
-#endif
-#if MSDOS
-	if (fbpos >= ftail) {
-		if (fsize <= 0)
-			return (EOF);	/* no error */
-		isize = (int) FBLOCK;
-		if (fsize < (long) FBLOCK)
-			isize = (int) fsize;
-		if (_read (handle, fbufp, isize) != isize)
-			return (EOF);	/* error */
-		fsize -= (long) isize;	/* what's left to read */
-		fbpos = fbufp;
-		ftail = fbufp + isize;
-	}
-#endif
-#if (V7 | VMS | CPM)
-		return (EOF);
-#endif
-
-	return (*fbpos++);
+	} else					/* Ignore close error   */
+		fwclose();			/* if a write error.    */
+	if (s != FIOSUC)			/* Some sort of error.  */
+		return (FALSE);
+	return (TRUE);
 }
-int
-bungetc(c)
-	int c;
+
+/*
+ * Read a file into the current
+ * buffer. This is really easy; all you do it
+ * find the name of the file, and call the standard
+ * "read a file into the current buffer" code.
+ * Bound to "C-X C-R".   mb: added keep&insert stuff.
+ */
+int fileread(f, n)
 {
-	oldbfc = c;
-}
-#endif
-int
-ffgetline(buf, nbuf)
-register char   buf[];
-register int    nbuf;
-{
-	register int    c, i, t;
+	register BUFFER	*bp;
+	register int	s, ins;
+	char	fname[NFILEN];
 
-	i = 0;
-	--nbuf;
-#if BFILES
-	while ((c=bgetc()) != EOF) {
-		if (c == '\n') {
-			if ((t=bgetc()) != '\r')
-				bungetc(t);
-			break;
+	bp = curbp;
+	if (lforw(bp->b_linep) != bp->b_linep) {	/* buf not empty */
+		ins = mlyesno("Keep current text"); /*, fname, NFILEN);*/
+		if (ins == ABORT)
+			return (ctrlg());
+		if (ins != TRUE) {
+			if ((s=bclear(bp)) != TRUE)
+				return (s);
 		}
-		if (c == '\r') {
-			if ((t=bgetc()) != '\n')
-				bungetc(t);
-			c = '\n';
-			break;
-		}
-#else
-	while ((c=getc(ffp)) != EOF) {
-		if (c == '\n') {
-			if ((t=getc(ffp)) != '\r')
-				ungetc(t, ffp);
-#if MSDOS
-			if (!foreignformat) {
-				mlwrite("File is in UNIX format");
-				foreignformat = TRUE;
-				}
-#endif
-			break;
-		}
-		if (c == '\r') {
-			if ((t=getc(ffp)) != '\n')
-				ungetc(t, ffp);
-			c = '\n';
-#if !MSDOS
-			if (!foreignformat) {
-				mlwrite("File is in DOS format");
-				foreignformat = TRUE;
-				}
-#endif
-			break;
-		}
-#endif
-		buf[i++] = c;
-		if (i >= nbuf) {
-			if (!longline) {
-				t = mlyesno("File has long line: splitted - REALLY EDIT");
-				mlerase();
-				if (!t) return (FIOERR);
-				mlwrite("File has long line: splitted");
-				}
-			break;
-		}
+	} else
+		ins = FALSE;
+
+	if (choosefile("File to read", fname, TRUE) != TRUE) {
+		bp->b_fname[0] = '\0';	  /* mb: not that file anymore! */
+		curwp->w_flag |= WFMODE;
+		return (ctrlg());
 	}
-	buf[i] = 0;
-	if (c == EOF) {
-#if BFILES
-		if (fsize != 0L) {
-#else
-		if (ferror(ffp) != FALSE) {
-#endif
-			mlwrite("File read error");
-			return (FIOERR);
-		}
-		if (i != 0) {
-			if (i==1 && buf[0]==0x1A) {
-				buf[--i] = 0;
-				if (!foreignformat)
-				    mlwrite("dropped ^Z at EOF");
-				}
-			else	{
-				if (!foreignformat)
-				    mlwrite("missing newline appended at EOF");
-				else
-				    curbp->b_flag |= (BFTAIL);
-				}
-			return (FIOFUNNY);
-		}
-		return (FIOEOF);
+	if ((s=readin(fname)) != FIOEOF)
+		return (FALSE);
+	bp->b_flag &= ~BFTEMP;
+	if (ins)
+		bp->b_flag |= BFCHG;
+	else {
+		cpyfname (bp->b_fname, fname);
+		bp->b_flag &= ~BFCHG;
 	}
-	return (FIOSUC);
+	bp->b_flag |= BFEDIT;			/* read for editing */
+	return (TRUE);  
 }
+
+/*
+ * Select a file for editing.
+ * Look around to see if you can find the
+ * file in another buffer; if you can find it
+ * just switch to the buffer.
+ * Else, create a new buffer, read in the
+ * text, and switch to the new buffer.
+ * Bound to C-X C-V.
+ * mb: combined "out" portion of new & old cases,
+ *	added "fileindex" stuff.
+ */
+int filevisit(f, n)
+{
+	register BUFFER *bp;
+	char		fname[NFILEN];
+	char		bname[NBUFN];
+	char		tname[NBUFN];
+	int		s, old;
+	char		*msg;
+	LINE		*flp, *fdp;
+
+	if (choosefile("File to visit", fname, FALSE) != TRUE)
+		return (ctrlg());
+
+	old = FALSE;
+	for (bp=bheadp; bp!=NULL; bp=bp->b_bufp) {
+		if ((bp->b_flag&BFTEMP)==0 && strcmp(bp->b_fname, fname)==0) {
+			old = TRUE;
+			break;
+		}
+	}
+	if (old) goto out;
+
+	makename(bname, fname);			/* New buffer name.     */
+
+	while ((bp=bfind(bname, FALSE, 0)) != NULL) {
+		msg = "Buffer name (default: existing buffer!)";
+		strcpy (tname, bname);
+		s = mlreply(msg, tname, bname, NBUFN, FALSE);
+		if (s!=TRUE && s!=FALSE)
+			return (ctrlg());
+		if (strcmp(bname,tname)==0) {
+			if (bclear(bp) != TRUE)
+				return(FALSE);
+			break;
+		}
+	}
+	if (bp==NULL && (bp=bfind(bname, TRUE, 0))==NULL)
+		return (FALSE);
+out:
+	flp = curwp->w_linep;
+	fdp = curwp->w_dotp;
+	gotobuf(bp);			/* mb: in buffer.c */
+	if (old)
+		mlwrite("[Old buffer]");
+	else {
+		if ((s=readin(fname)) != FIOEOF) {
+			bbclear(curbp);		/* free up text read	 */
+			gotobuf(oldbp);		/* back where we started */
+			/* now oldbp = abandoned (empty) visited buf */
+			freebuf(oldbp);
+			curwp->w_linep = flp;	/* mb: needed,		*/
+			curwp->w_dotp  = fdp;	/*   don't know why	*/
+			return (FALSE);
+		}
+		cpyfname (bp->b_fname, fname);
+		bp->b_flag &= ~(BFTEMP|BFCHG|BFEDIT);
+	}
+/*	curwp->w_linep = bp->b_linep;		mb: now done in gotobuf() */
+	curwp->w_flag |= WFMODE|WFFORCE|WFHARD;
+	return (TRUE);
+}
+
+/*
+ * Take a file name, and from it
+ * fabricate a buffer name. This routine knows
+ * about the syntax of file names on the target system.
+ * I suppose that this information could be put in
+ * a better place than a line of code.
+ */
+void makename(bname, fname)
+char    bname[];
+char    fname[];
+{
+	register char   *cp1;
+	register char   *cp2;
+	register char	c;
+
+	cp1 = &fname[0];
+	while (*cp1 != 0)
+		++cp1;
+#if     VMS
+	while (cp1!=&fname[0] && cp1[-1]!=':' && cp1[-1]!=']')
+		--cp1;
+#endif
+#if     CPM
+	while (cp1!=&fname[0] && cp1[-1]!=':')
+		--cp1;
+#endif
+#if     MSDOS
+	while (cp1!=&fname[0] && cp1[-1]!=':' && cp1[-1]!='\\')
+		--cp1;
+#endif
+#if     AtST
+	while (cp1!=&fname[0] && cp1[-1]!=':' && cp1[-1]!='\\')
+		--cp1;
+#endif
+#if     V7
+	while (cp1!=&fname[0] && cp1[-1]!='/')
+		--cp1;
+#endif
+	cp2 = &bname[0];
+	while (cp2!=&bname[NBUFN-1] && *cp1!=0 && *cp1!=';') {
+		c = *cp1++;
+#if (V7 == 0)
+		if (c >= 'A' && c <= 'Z')
+			c += 'a' - 'A';
+#endif
+		*cp2++ = c;
+	}
+	*cp2 = 0;
+}
+
+/*
+ * Ask for a file name, and write the
+ * contents of the current buffer to that file.
+ * Update the remembered file name and clear the
+ * buffer changed flag. This handling of file names
+ * is different from the earlier versions, and
+ * is more compatible with Gosling EMACS than
+ * with ITS EMACS. Bound to "C-X C-W".
+ * mb: added default filename.
+ */
+int filewrite(f, n)
+{
+	int	s;
+	char	fname[NFILEN];
+	WINDOW 	*wp;
+
+	if (choosefile("File to write", fname, TRUE) != TRUE)
+		return (ctrlg());
+
+	if ((s=writeout(fname)) == TRUE) {
+		cpyfname (curbp->b_fname, fname);
+		curbp->b_flag &= ~BFCHG;
+		wp = wheadp;		/* Update mode lines. */
+		while (wp != NULL) {
+			if (wp->w_bufp == curbp)
+				wp->w_flag |= WFMODE;
+			wp = wp->w_wndp;
+		}
+	}
+	return (s);
+}
+
+/*
+ * Save the contents of the current
+ * buffer in its associatd file. No nothing
+ * if nothing has changed (this may be a bug, not a
+ * feature). Error if there is no remembered file
+ * name for the buffer. Bound to "C-X C-S". May
+ * get called by "C-Z".
+ */
+int filesave(f, n)
+{
+	register WINDOW *wp;
+	register int    s;
+
+	if ((curbp->b_flag&BFCHG) == 0)		/* Return, no changes.  */
+		return (TRUE);
+	if (curbp->b_fname[0] == 0) {		/* Must have a name.    */
+		mlwrite("Need a file name");
+		return (FALSE);
+	}
+	if ((s=writeout(curbp->b_fname)) == TRUE) {
+		curbp->b_flag &= ~BFCHG;
+		wp = wheadp;			/* Update mode lines.   */
+		while (wp != NULL) {
+			if (wp->w_bufp == curbp)
+				wp->w_flag |= WFMODE;
+			wp = wp->w_wndp;
+		}
+	}
+	return (s);
+}
+
+/*
+ * The command allows the user
+ * to modify the file name associated with
+ * the current buffer. It is like the "f" command
+ * in UNIX "ed". The operation is simple; just zap
+ * the name in the BUFFER structure, and mark the windows
+ * as needing an update.
+ */
+int filename(f, n)
+{
+	register WINDOW *wp;
+	char		fname[NFILEN];
+
+	if (choosefile ("New filename", fname, TRUE) != TRUE)
+		return (ctrlg());
+	cpyfname (curbp->b_fname, fname);
+	curbp->b_flag |= BFEDIT;
+	wp = wheadp;				/* Update mode lines.   */
+	while (wp != NULL) {
+		if (wp->w_bufp == curbp)
+			wp->w_flag |= WFMODE;
+		wp = wp->w_wndp;
+	}
+	return (TRUE);
+}
+
 
 #if CANLOG
 
@@ -1142,6 +1140,21 @@ extern char *getenv();
 static int   fd;
 #endif
 
+static char *logfile()
+{
+	char *home;
+	char *lfln;
+	 if ((home=getenv("HOME")) == NULL)
+		lfln = LOGFILE;
+	 else {
+		if ((lfln = malloc(strlen(home) + sizeof(LOGFILE) + 2)) == NULL) return (NULL);
+		strcpy(lfln, home);
+		strcat(lfln, "/");
+		strcat(lfln, LOGFILE);
+	 }
+	return (lfln);
+}
+
 int
 ropenlog()
 {
@@ -1150,7 +1163,7 @@ ropenlog()
 #if V7
 	/* try and get the log file pathname from the environment */
 	if ((logfn=getenv("MEXLOG")) == NULL)
-		logfn = LOGFILE;
+		logfn = logfile();
 #else
 	logfn = LOGFILE;
 #endif
@@ -1167,7 +1180,7 @@ wopenlog()
 #if V7
 	/* try and get the log file pathname from the environment */
 	if ((logfn=getenv("MEXLOG")) == NULL)
-		logfn = LOGFILE;
+		logfn = logfile();
 #else
 	logfn = LOGFILE;
 #endif
@@ -1184,7 +1197,7 @@ wopenlog()
 	return (TRUE);
 }
 
-closelogf()
+void closelogf()
 {
 	if (logfc != 0)
 		fclose(logfp);
@@ -1201,7 +1214,7 @@ putlog(c)
 	return (s);
 }
 
-flushlog(flag)
+void flushlog(flag)
 	int flag;
 {
 	if ((flag && logfc > 0) || logfc >= LOGFLUSH)
@@ -1386,7 +1399,7 @@ extern	short	iochan;				/* In "termio.c"	*/
  * some (unknown) condition, you don't get one
  * free when DCL starts up.
  */
-spawncli(f, n)
+int spawncli(f, n)
 {
 #if	VMS
 	if (playback == TRUE)
@@ -1536,7 +1549,7 @@ dirout(c, e)
  * garbage so a full repaint is done.
  * Bound to "C-X !".
  */
-spawn(f, n)
+int spawn(f, n)
 {
 #if	VMS
 	register int	s;

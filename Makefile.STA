@@ -1,14 +1,15 @@
-# Makefile for me on Linux static
+# Makefile for MEX on Linux static
 
-CFLAGS= -g -I/usr/include/ncurses -Dlinux2
 LFLAGS= -static
-LIBS=   -lncurses
-#LIBS=   /usr/lib/libncurses.a
-OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o \
-	search.o term.o window.o word.o
+LIBS=
+CFLAGS= -O3 -DVT100 -Dlinux2
+OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
 
-me: $(OBJ)
-	$(CC) -o me $(LFLAGS) $(OBJ) $(LIBS)
+all:	mes
+
+mes: $(OBJ)
+	$(CC) -o $@ $(LFLAGS) $(OBJ) $(LIBS)
+	strip mes
 
 buffer.o: buffer.c ed.h
 	$(CC) $(CFLAGS) -c buffer.c
@@ -28,10 +29,7 @@ help.o: help.c ed.h
 line.o: line.c ed.h
 	$(CC) $(CFLAGS) -c line.c
 
-curkeys.h:
-	grep 'define[^K]*KEY_' </usr/include/ncurses.h >$@
-
-main.o: main.c ed.h curkeys.h
+main.o: main.c ed.h
 	$(CC) $(CFLAGS) -c main.c
 
 random.o: random.c ed.h
@@ -41,7 +39,7 @@ search.o: search.c ed.h
 	$(CC) $(CFLAGS) -c search.c
 
 term.o: term.c ed.h
-	$(CC) $(CFLAGS) -DCURSES -c term.c
+	$(CC) $(CFLAGS) -c term.c
 
 window.o: window.c ed.h
 	$(CC) $(CFLAGS) -c window.c
@@ -52,9 +50,9 @@ word.o: word.c ed.h
 help.c: help_c.eng
 	-ln -f $? $@
 
-install: me
-	strip me
-	su bin -c "cp me /usr/local/bin"
+install: mes
+	strip mes
+	cp mes bin/me.static
 
 clean:
-	rm -f *.o core me curkeys.h help.c
+	rm -f *.o core mes curkeys.h help.c

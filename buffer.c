@@ -9,8 +9,72 @@
 #include	<string.h>
 #include	"ed.h"
 
-extern update();
-extern int ctrlg();
+/*
+ * This routine blows away all of the text
+ * in a buffer. If the buffer is marked as changed
+ * then we ask if it is ok to blow it away; this is
+ * to save the user the grief of losing text. The
+ * window chain is nearly always wrong if this gets
+ * called; the caller must arrange for the updates
+ * that are required. Return TRUE if everything
+ * looks good.
+ */
+int bclear(bp)
+	register BUFFER	*bp;
+{	
+	if ((bp->b_flag&BFTEMP) == 0		/* Not scratch buffer.	*/
+	 && (bp->b_flag&BFCHG) != 0		/* Something changed	*/
+	 && mlyesno("Discard changes") != TRUE) {
+		return (ctrlg());
+	}
+	bbclear(bp);
+	update(TRUE);	/* mb: user feedback */
+	return (TRUE);
+}
+
+void pltoa(buf, width, num)
+	register char	buf[];
+	register int	width;
+	register long	num;
+{
+	buf[width] = 0;				/* End of string.	*/
+	while (num >= 10) {			/* Conditional digits.	*/
+		buf[--width] = (num%10) + '0';
+		num /= 10;
+	}
+	buf[--width] = num + '0';		/* Always 1 digit.	*/
+	while (width != 0)			/* Pad with blanks.	*/
+		buf[--width] = ' ';
+}
+
+/*
+ * The argument "text" points to a string.
+ * Append this line to the buffer *bp.
+ * Handcraft the EOL on the end.
+ * Return TRUE if it worked and
+ * FALSE if you ran out of room.
+ */
+int addline(text, bp)
+	char *text;
+	register BUFFER	*bp;
+{
+	register LINE	*lp;
+	register int	i;
+	register int	ntext;
+
+	ntext = strlen(text);
+	if ((lp=lalloc(ntext)) == NULL)
+		return (FALSE);
+	for (i=0; i<ntext; ++i)
+		lputc(lp, i, text[i]);
+	bp->b_linep->l_bp->l_fp = lp;		/* Hook onto the end	*/
+	lp->l_bp = bp->b_linep->l_bp;
+	bp->b_linep->l_bp = lp;
+	lp->l_fp = bp->b_linep;
+	if (bp->b_dotp == bp->b_linep)		/* If "." is at the end	*/
+		bp->b_dotp = lp;		/* move it to new line	*/
+	return (TRUE);
+}
 
 /*
  * mb: code common to usebuffer() and killbuf().
@@ -121,7 +185,7 @@ gotobuf(bp)
 	return;
 }
 
-usebuffer(f, n)
+int usebuffer(f, n)
 {
 	BUFFER	*bp;
 	char	bufn[NBUFN];
@@ -168,11 +232,10 @@ void freebuf(bp)			/* must bclear() the text first! */
 	return;
 }
 
-killbuffer(f, n)
+int killbuffer(f, n)
 {
 	register BUFFER	*bp;
-	register int	s;
-	char		bufn[NBUFN], *dflt;
+	char bufn[NBUFN];
 
 	if (choosebuf("Buffer to kill", bufn) != TRUE)
 		return (ctrlg());
@@ -244,7 +307,7 @@ int editog(f,n)
  * it takes. Lastly, repaint all of the windows
  * that are displaying it. (by mb:)
  */
-make_popup(buffer, prepare, data)
+int make_popup(buffer, prepare, data)
 	BUFFER	*buffer;		/* which temp buffer	*/
 	int	(*prepare)();		/* function pointer	*/
 	char	*data[];     		/* array of strings	*/
@@ -299,7 +362,7 @@ make_popup(buffer, prepare, data)
  * if everything works. Return FALSE if there
  * is an error (if there is no memory).
  */
-makelist(buffer, data)
+int makelist(buffer, data)
 	BUFFER	*buffer;
 	char	*data[];	/* not used */
 {
@@ -310,14 +373,13 @@ makelist(buffer, data)
 	register BUFFER	*bp;
 	register LINE	*lp;
 	register int	i;
-	register int	type;
 	char		b[8];
 	char		line[128];
 
 	bp = buffer;
 	bbclear(bp);				/* Blow old text away	*/
 #if ST_DA
-	if (addline("     me DA version " VERSION, bp) == FALSE
+	if (addline("     MEX DA version 2.2", bp) == FALSE
 	||  addline(" C   Size Buffer         File", bp) == FALSE)
 		return (FALSE);
 #else
@@ -373,57 +435,12 @@ makelist(buffer, data)
 	return (TRUE);				/* All done		*/
 }
 
-pltoa(buf, width, num)
-	register char	buf[];
-	register int	width;
-	register long	num;
-{
-	buf[width] = 0;				/* End of string.	*/
-	while (num >= 10) {			/* Conditional digits.	*/
-		buf[--width] = (num%10) + '0';
-		num /= 10;
-	}
-	buf[--width] = num + '0';		/* Always 1 digit.	*/
-	while (width != 0)			/* Pad with blanks.	*/
-		buf[--width] = ' ';
-}
-
 /*
  * List all of the active buffers. Bound to "C-X ?".
  */
-listbuffers(f, n)
+int listbuffers(f, n)
 {
 	return (make_popup (blistp, makelist, (char **) NULL));
-}
-
-
-/*
- * The argument "text" points to a string.
- * Append this line to the buffer *bp.
- * Handcraft the EOL on the end.
- * Return TRUE if it worked and
- * FALSE if you ran out of room.
- */
-addline(text, bp)
-	char *text;
-	register BUFFER	*bp;
-{
-	register LINE	*lp;
-	register int	i;
-	register int	ntext;
-
-	ntext = strlen(text);
-	if ((lp=lalloc(ntext)) == NULL)
-		return (FALSE);
-	for (i=0; i<ntext; ++i)
-		lputc(lp, i, text[i]);
-	bp->b_linep->l_bp->l_fp = lp;		/* Hook onto the end	*/
-	lp->l_bp = bp->b_linep->l_bp;
-	bp->b_linep->l_bp = lp;
-	lp->l_fp = bp->b_linep;
-	if (bp->b_dotp == bp->b_linep)		/* If "." is at the end	*/
-		bp->b_dotp = lp;		/* move it to new line	*/
-	return (TRUE);
 }
 
 /*
@@ -436,7 +453,7 @@ addline(text, bp)
  * Return FALSE if no buffers
  * have been changed.
  */
-anycb()
+int anycb()
 {
 	register BUFFER	*bp;
 
@@ -453,7 +470,7 @@ anycb()
  * mb: delete the text of temporary buffers.
  * Called by lalloc() and enlrg_kbuf if needed.
  */
-dtmpbufs()
+void dtmpbufs()
 {
 	register BUFFER	*bp;
 
@@ -514,32 +531,9 @@ register char	*bname;
 }
 
 /*
- * This routine blows away all of the text
- * in a buffer. If the buffer is marked as changed
- * then we ask if it is ok to blow it away; this is
- * to save the user the grief of losing text. The
- * window chain is nearly always wrong if this gets
- * called; the caller must arrange for the updates
- * that are required. Return TRUE if everything
- * looks good.
- */
-bclear(bp)
-	register BUFFER	*bp;
-{	
-	if ((bp->b_flag&BFTEMP) == 0		/* Not scratch buffer.	*/
-	 && (bp->b_flag&BFCHG) != 0		/* Something changed	*/
-	 && mlyesno("Discard changes") != TRUE) {
-		return (ctrlg());
-	}
-	bbclear(bp);
-	update(TRUE);	/* mb: user feedback */
-	return (TRUE);
-}
-
-/*
  * mb: separated from bclear()
  */
-bbclear(bp)
+void bbclear(bp)
 	register BUFFER	*bp;
 {
 	register WINDOW	*wp;
@@ -568,7 +562,7 @@ bbclear(bp)
 /*
  * mb: added.
  */
-renambuf(f, n)
+int renambuf(f, n)
 {
 	register WINDOW	*wp;
 	register char   *cp1;

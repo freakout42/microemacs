@@ -1,4 +1,4 @@
-# Makefile for me on FreeBSD 7.0 amd64
+# Makefile for MEX on FreeBSD 7.0 amd64
 
 CFLAGS= -O3 -Dfreebsd7 -Wno-return-type -w
 LFLAGS= -s
@@ -53,7 +53,7 @@ help.c: help_c.eng
 
 install: me
 	strip me
-	su bin -c "cp me /usr/local/bin"
+	cp me /usr/local/bin
 
 clean:
-	rm -f *.o core me me help.c curkeys.h
+	rm -f *.o core me mex help.c curkeys.h

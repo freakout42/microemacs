@@ -32,9 +32,9 @@ extern int vidrev;
 #define	EFN	0			/* Event flag			*/
 
 char	obuf[NOBUF];			/* Output buffer		*/
-nt	nobuf;				/* # of bytes in above		*/
+int	nobuf;				/* # of bytes in above		*/
 char	ibuf[NIBUF];			/* Input buffer			*/
-nt	nibuf;				/* # of bytes in above		*/
+int	nibuf;				/* # of bytes in above		*/
 int	ibufi;				/* Read index			*/
 int	oldmode[2];			/* Old TTY mode bits		*/
 int	newmode[2];			/* New TTY mode bits		*/
@@ -113,7 +113,7 @@ struct  termio  nstate;
  * finds the terminal, then assigns a channel to it
  * and sets it raw. On CPM it is a no-op.
  */
-ttopen()
+int ttopen()
 {
 #if	VMS
 	struct	dsc$descriptor	idsc;
@@ -212,6 +212,10 @@ ttopen()
 
 	tcgetattr (fileno(stdin), &t);
 	t.c_cc[VINTR] = 0;
+	t.c_cc[VSUSP] = 0;
+#ifdef VLNEXT
+  t.c_cc[VLNEXT] = 0;
+#endif
 	tcsetattr (fileno(stdin), TCSANOW, &t);
 
 /*	raw();*/
@@ -227,6 +231,7 @@ ttopen()
 #endif
 #endif
 #endif
+return 0;
 }
 
 /*
@@ -235,7 +240,7 @@ ttopen()
  * On VMS it puts the terminal back in a reasonable state.
  * Another no-operation on CPM.
  */
-ttclose()
+int ttclose()
 {
 #if	VMS
 	int	status;
@@ -266,9 +271,9 @@ ttclose()
 	if (vidmode >= 0)
 		textmode (origvidmode);
 	normvideo();
-/*	putch(' ');		/* put norm attr into effect, not neccesary */
+/*	putch(' ');		/ * put norm attr into effect, not neccesary */
 	putch('\r'); putch('\n'); /* new line FreeDOS needed it */
-/*	clreol();		/* not neccesary */
+/*	clreol();		/ * not neccesary */
 #endif
 #if	V7
 #if     !SYS_V
@@ -292,6 +297,7 @@ ttclose()
 	putchar('\n');
 	fflush(stdout);
 #endif
+return 0;
 }
 
 /*
@@ -303,7 +309,7 @@ ttclose()
  * Ditto on MS-DOS (use the very very raw console
  * output routine).
  */
-ttputc(c)
+int ttputc(c)
 {
 #ifdef DEBUG
 	fprintf (stderr, "putc:%c\n",c);
@@ -329,9 +335,10 @@ ttputc(c)
 	fputc(c, stdout);
 #endif
 #endif
+return 0;
 }
 
-ttputs(str)			/* mb: added */
+void ttputs(str)			/* mb: added */
 	register char *str;
 {
 	register int c;
@@ -345,7 +352,7 @@ ttputs(str)			/* mb: added */
  * no-operation on systems where byte at a time
  * terminal I/O is done.
  */
-ttflush()
+int ttflush()
 {
 #if	VMS
 	int	status;
@@ -374,6 +381,7 @@ ttflush()
 	fflush(stdout);
 #endif
 #endif
+return 0;
 }
 
 /*
@@ -385,7 +393,9 @@ ttpending()
 #if V7
 #ifdef FIONREAD
 	long c;
-	if (ioctl(0, FIONREAD, (struct sgttyb *) &c) == -1)
+  char *cp;
+  cp = (char *) &c;
+	if (ioctl(0, FIONREAD, (struct sgttyb *) cp) == -1)
 		return (FALSE);
 	return (c > 0);
 #else
@@ -410,7 +420,7 @@ ttpending()
  * figures. Very simple on CPM, because the system can
  * do exactly what you want.
  */
-ttgetc()
+int ttgetc()
 {
 #if	VMS
 	int	status;
@@ -504,9 +514,9 @@ int
 hardputc(c)
 	int c;
 {
+#if AtST
 	int s;
 	extern int hdev;
-#if AtST
 	return (Bconout (hdev, c));
 #endif
 #if MSDOS
@@ -1100,14 +1110,6 @@ char	*str;
 {
 	tputs(str, 1, ttputc);
 }
-
-/*
-putnpad(str, n)
-char	*str;
-{
-	tputs(str, n, ttputc);
-}
- */
 #endif
 
 /*
@@ -1121,20 +1123,59 @@ char	*str;
 
 #define ESC	0x1B
 
-extern int	ttopen();
-extern int	ttgetc();
-extern int	ttputc();
-extern int	ttflush();
-extern int 	ttclose();
-extern int 	tcurmove();
-extern int 	tcureeol();
-extern int	tcureeop();
-extern int	tcurhglt();
-extern int	tcurnrml();
-extern int	tcurbeep();
-extern int	tcuropen();
+int tcuropen()
+{
+	ttopen();
+	return 0;
+}
+
+int tcurmove(row, col)
+register int row, col;
+{
+	move(row, col);
+	return 0;
+}
+
+int tcureeol()
+{
+	clrtoeol();
+	return 0;
+}
+
+int tcureeop()
+{
+	clear();
+	return 0;
+}
+
+int tcurbeep()
+{
+	beep();
+	return 0;
+}
+
+int tcurhglt()
+{
+	standout();
+	return 0;
+}
+
+int tcurnrml()
+{
+	standend();
+	return 0;
+}
+
+void putpad(str)
+char	*str;
+{
+	tputs(str, 1, ttputc);
+}
+
+/*
 extern int	tput();
 extern char	*tgoto();
+ */
 
 TERM term = {
 	0,		/* will be set from curses entry */
@@ -1152,54 +1193,4 @@ TERM term = {
 	tcurnrml,
 	ttpending
 };
-
-tcuropen()
-{
-	ttopen();
-}
-
-tcurmove(row, col)
-register int row, col;
-{
-	move(row, col);
-}
-
-tcureeol()
-{
-	clrtoeol();
-}
-
-tcureeop()
-{
-	clear();
-}
-
-tcurbeep()
-{
-	beep();
-}
-
-tcurhglt()
-{
-	standout();
-}
-
-tcurnrml()
-{
-	standend();
-}
-
-putpad(str)
-char	*str;
-{
-	tputs(str, 1, ttputc);
-}
-
-/*
-putnpad(str, n)
-char	*str;
-{
-	tputs(str, n, ttputc);
-}
- */
 #endif

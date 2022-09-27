@@ -17,7 +17,7 @@
  * M-!. Because of the default, it works like in
  * Gosling.
  */
-reposition(f, n)
+int reposition(f, n)
 {
 	curwp->w_force = n;
 	curwp->w_flag |= WFFORCE;
@@ -30,7 +30,7 @@ reposition(f, n)
  * argument it recenters "." in the current
  * window. Bound to "C-L".
  */
-refresh(f, n)
+int refresh(f, n)
 {
 	if (f == FALSE) {
 		sgarbf = TRUE;
@@ -49,7 +49,7 @@ refresh(f, n)
  * nothing if there is only 1 window on
  * the screen. Bound to "C-X C-N".
  */
-nextwind(f, n)
+int nextwind(f, n)
 {
 	register WINDOW	*wp;
 
@@ -75,7 +75,7 @@ nextwind(f, n)
  * although the command does not do a lot
  * if there is 1 window.
  */
-prevwind(f, n)
+int prevwind(f, n)
 {
 	register WINDOW	*wp1;
 	register WINDOW	*wp2;
@@ -100,22 +100,6 @@ prevwind(f, n)
 
 #if EXTRA
 /*
- * This command moves the current
- * window down by "arg" lines. Recompute
- * the top line in the window. The move up and
- * move down code is almost completely the same;
- * most of the work has to do with reframing the
- * window, and picking a new dot. We share the
- * code by having "move down" just be an interface
- * to "move up".  Bound to "C-X C-N".
- */
-mvdnwind(f, n)
-register int	n;
-{
-	return (mvupwind(f, -n));
-}
-
-/*
  * Move the current window up by "arg"
  * lines. Recompute the new top line of the window.
  * Look to see if "." is still on the screen. If it is,
@@ -124,7 +108,7 @@ register int	n;
  * not really move "."; it moves the frame). Bound
  * to "C-X C-P".
  */
-mvupwind(f, n)
+int mvupwind(f, n)
 register int	n;
 {
 	register LINE	*lp;
@@ -155,6 +139,22 @@ register int	n;
 	curwp->w_doto  = 0;
 	return (TRUE);
 }
+
+/*
+ * This command moves the current
+ * window down by "arg" lines. Recompute
+ * the top line in the window. The move up and
+ * move down code is almost completely the same;
+ * most of the work has to do with reframing the
+ * window, and picking a new dot. We share the
+ * code by having "move down" just be an interface
+ * to "move up".  Bound to "C-X C-N".
+ */
+int mvdnwind(f, n)
+register int	n;
+{
+	return (mvupwind(f, -n));
+}
 #endif
 
 /*
@@ -168,7 +168,7 @@ register int	n;
  * distruction of a window makes a buffer
  * become undisplayed.
  */
-onlywind(f, n)
+int onlywind(f, n)
 {
 	register WINDOW	*wp;
 	register LINE	*lp;
@@ -216,7 +216,7 @@ onlywind(f, n)
  * a "malloc" failure allocating the structure
  * for the new window. Bound to "C-X 2".
  */
-splitwind(f, n)
+int splitwind(f, n)
 {
 	register WINDOW	*wp;
 	register LINE	*lp;
@@ -298,7 +298,7 @@ splitwind(f, n)
  * because dot would move. Bound to "C-X ^".
  * mb: generalized for n<0.
  */
-enlargewind(f, n)
+int enlargewind(f, n)
 {
 	register WINDOW	*adjwp;
 	register LINE	*lp;
@@ -373,10 +373,8 @@ wpopup()
  * Scroll next window down a page.
  * Bound to C-X V.
  */
-page_nextw(f, n)
+void page_nextw(f, n)
 {
-	int s;
-
 	nextwind(FALSE, 1);
 	forwpage(f, n);
 	prevwind(FALSE, 1);
@@ -384,7 +382,7 @@ page_nextw(f, n)
 
 /* Bound to C-X Z. */
 
-back_nextw(f, n)
+void back_nextw(f, n)
 {
 	page_nextw(TRUE, -n);
 }

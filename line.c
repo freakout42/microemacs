@@ -71,7 +71,7 @@ lalloc(used)
  * described in the above comments don't hold
  * here.
  */
-lfree(lp)
+void lfree(lp)
 register LINE	*lp;
 {
 	register BUFFER	*bp;
@@ -120,7 +120,7 @@ register LINE	*lp;
  * HARD. Set MODE if the mode line needs to be
  * updated (the "*" has to be set).
  */
-lchange(flag)
+void lchange(flag)
 register int	flag;
 {
 	register WINDOW	*wp;
@@ -151,7 +151,7 @@ register int	flag;
  * if all is well, and FALSE on errors.
  * mb: added overstrike capability.
  */
-linsert(n, c, overstrike)
+int linsert(n, c, overstrike)
 {
 	register char	*cp1;
 	register char	*cp2;
@@ -251,7 +251,7 @@ linsert(n, c, overstrike)
  * easier then in the above case, because the split
  * forces more updating.
  */
-lnewline()
+int lnewline()
 {
 	register char	*cp1;
 	register char	*cp2;
@@ -299,81 +299,6 @@ lnewline()
 }
 
 /*
- * This function deletes "n" bytes,
- * starting at dot. It understands how do deal
- * with end of lines, etc. It returns TRUE if all
- * of the characters were deleted, and FALSE if
- * they were not (because dot ran into the end of
- * the buffer. The "kflag" is TRUE if the text
- * should be put in the kill buffer.
- */
-ldelete(n, kflag)
-{
-	register char	*cp1;
-	register char	*cp2;
-	register LINE	*dotp;
-	register int	doto;
-	register int	chunk;
-	register WINDOW	*wp;
-
-	if (kflag != FALSE) {			/* mb: added */
-		if ((lastflag&CFKILL) == 0)
-			kdelete();
-		thisflag |= CFKILL;
-		if (enlrg_kbuf(n) != TRUE)
-			return (FALSE);
-	}
-	while (n > 0) {
-		dotp = curwp->w_dotp;
-		doto = curwp->w_doto;
-		if (dotp == curbp->b_linep)	/* Hit end of buffer.	*/
-			return (FALSE);
-		chunk = llength(dotp)-doto;	/* Size of chunk.	*/
-		if (chunk > n)
-			chunk = n;
-		if (chunk == 0) {		/* End of line, merge.	*/
-			lchange(WFHARD);
-			if (ldelnewline() == FALSE
-			|| (kflag!=FALSE && kinsert('\n')==FALSE))
-				return (FALSE);
-			--n;
-			continue;
-		}
-		lchange(WFEDIT);
-		cp1 = &dotp->l_text[doto];	/* Scrunch text.	*/
-		cp2 = cp1 + chunk;
-		if (kflag != FALSE) {		/* Kill?		*/
-			while (cp1 < cp2) {
-				if (kinsert(*cp1) == FALSE)
-					return (FALSE);
-				++cp1;
-			}
-			cp1 = &dotp->l_text[doto];
-		}
-		while (cp2 < &dotp->l_text[llength(dotp)])
-			*cp1++ = *cp2++;
-		dotp->l_used -= chunk;
-		wp = wheadp;			/* Fix windows		*/
-		while (wp != NULL) {
-			if (wp->w_dotp==dotp && wp->w_doto>=doto) {
-				wp->w_doto -= chunk;
-				if (wp->w_doto < doto)
-					wp->w_doto = doto;
-			}	
-			if (wp->w_markp==dotp && wp->w_marko>=doto) {
-				wp->w_marko -= chunk;
-				if (wp->w_marko < doto)
-					wp->w_marko = doto;
-			}
-			wp = wp->w_wndp;
-		}
-		n -= chunk;
-	}
-	curwp->w_force = 0;	/* mb: if reframe, to middle */
-	return (TRUE);
-}
-
-/*
  * Delete a newline. Join the current line
  * with the next line. If the next line is the magic
  * header line always return TRUE; merging the last line
@@ -384,7 +309,7 @@ ldelete(n, kflag)
  * about in memory. Return FALSE on error and TRUE if all
  * looks ok. Called by "ldelete" only.
  */
-ldelnewline()
+int ldelnewline()
 {
 	register char	*cp1;
 	register char	*cp2;
@@ -462,45 +387,9 @@ ldelnewline()
 }
 
 /*
- * Delete all of the text
- * saved in the kill buffer. Called by commands
- * when a new kill context is being created. The kill
- * buffer array is released, just in case the buffer has
- * grown to immense size. No errors.
- */
-kdelete()
-{
-	if (kbufp != NULL) {
-		free((char *) kbufp);
-		kbufp = NULL;
-		kused = 0;
-		ksize = 0;
-	}
-}
-
-/* mb: simplified, calls enlrg_kbuf().
- * Insert a character to the kill buffer,
- * enlarging the buffer if there isn't any room. Always
- * grow the buffer in chunks, on the assumption that if you
- * put something in the kill buffer you are going to put
- * more stuff there too later. Return TRUE if all is
- * well, and FALSE on errors.
- */
-kinsert(c)
-	int c;
-{
-	if (kused >= ksize) {
-		if (enlrg_kbuf(1) != TRUE)
-			return (FALSE);
-	}
-	kbufp[kused++] = (char) c;
-	return (TRUE);
-}
-
-/*
  * mb: added. To enable preparation of a big kbuf.
  */
-enlrg_kbuf(size)
+int enlrg_kbuf(size)
 	register int size;
 {
 	register char *cp1;
@@ -537,13 +426,124 @@ enlrg_kbuf(size)
 	return (TRUE);
 }
 
+/* mb: simplified, calls enlrg_kbuf().
+ * Insert a character to the kill buffer,
+ * enlarging the buffer if there isn't any room. Always
+ * grow the buffer in chunks, on the assumption that if you
+ * put something in the kill buffer you are going to put
+ * more stuff there too later. Return TRUE if all is
+ * well, and FALSE on errors.
+ */
+int kinsert(c)
+	int c;
+{
+	if (kused >= ksize) {
+		if (enlrg_kbuf(1) != TRUE)
+			return (FALSE);
+	}
+	kbufp[kused++] = (char) c;
+	return (TRUE);
+}
+
+/*
+ * This function deletes "n" bytes,
+ * starting at dot. It understands how do deal
+ * with end of lines, etc. It returns TRUE if all
+ * of the characters were deleted, and FALSE if
+ * they were not (because dot ran into the end of
+ * the buffer. The "kflag" is TRUE if the text
+ * should be put in the kill buffer.
+ */
+int ldelete(n, kflag)
+{
+	register char	*cp1;
+	register char	*cp2;
+	register LINE	*dotp;
+	register int	doto;
+	register int	chunk;
+	register WINDOW	*wp;
+
+	if (kflag != FALSE) {			/* mb: added */
+		if ((lastflag&CFKILL) == 0)
+			kdelete();
+		thisflag |= CFKILL;
+		if (enlrg_kbuf(n) != TRUE)
+			return (FALSE);
+	}
+	while (n > 0) {
+		dotp = curwp->w_dotp;
+		doto = curwp->w_doto;
+		if (dotp == curbp->b_linep)	/* Hit end of buffer.	*/
+			return (FALSE);
+		chunk = llength(dotp)-doto;	/* Size of chunk.	*/
+		if (chunk > n)
+			chunk = n;
+		if (chunk == 0) {		/* End of line, merge.	*/
+			lchange(WFHARD);
+			if (ldelnewline() == FALSE
+			|| (kflag!=FALSE && kinsert('\n')==FALSE))
+				return (FALSE);
+			--n;
+			continue;
+		}
+		lchange(WFEDIT);
+		cp1 = &dotp->l_text[doto];	/* Scrunch text.	*/
+		cp2 = cp1 + chunk;
+		if (kflag != FALSE) {		/* Kill?		*/
+			while (cp1 < cp2) {
+				if (kinsert(*cp1) == FALSE)
+					return (FALSE);
+				++cp1;
+			}
+			cp1 = &dotp->l_text[doto];
+		}
+		while (cp2 < &dotp->l_text[llength(dotp)])
+			*cp1++ = *cp2++;
+		dotp->l_used -= chunk;
+		wp = wheadp;			/* Fix windows		*/
+		while (wp != NULL) {
+			if (wp->w_dotp==dotp && wp->w_doto>=doto) {
+				wp->w_doto -= chunk;
+				if (wp->w_doto < doto)
+					wp->w_doto = doto;
+			}	
+			if (wp->w_markp==dotp && wp->w_marko>=doto) {
+				wp->w_marko -= chunk;
+				if (wp->w_marko < doto)
+					wp->w_marko = doto;
+			}
+			wp = wp->w_wndp;
+		}
+		n -= chunk;
+	}
+	curwp->w_force = 0;	/* mb: if reframe, to middle */
+	return (TRUE);
+}
+
+/*
+ * Delete all of the text
+ * saved in the kill buffer. Called by commands
+ * when a new kill context is being created. The kill
+ * buffer array is released, just in case the buffer has
+ * grown to immense size. No errors.
+ */
+void kdelete()
+{
+	if (kbufp != NULL) {
+		free((char *) kbufp);
+		kbufp = NULL;
+		kused = 0;
+		ksize = 0;
+	}
+}
+
 /*
  * This function gets characters from
  * the kill buffer. If the character index "n" is
  * off the end, it returns "-1". This lets the caller
  * just scan along until it gets a "-1" back.
  */
-kremove(n)
+int kremove(n)
 {
 	if (n >= kused)
 		return (-1);
@@ -558,7 +558,7 @@ kremove(n)
  * Real easy: switch pointers.
  * Bound to C-X C-T.
  */
-ltwiddle(f,n) {
+int ltwiddle(f,n) {
 
 	register LINE *lp;
 	register LINE *tp;

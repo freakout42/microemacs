@@ -11,7 +11,7 @@
 
 char *help_menu[] = {
 " ",
-"\t\tme version " VERSION,
+"\t\tMEX version " VERSION,
 " ",
 "\tCursor control\t\t\tInsert and delete",
 "\tMoving and copying\t\tSearching",
@@ -19,7 +19,7 @@ char *help_menu[] = {
 "\tBuffers\t\t\t\tDisk Files",
 "\tWindow control\t\t\tEntering strings",
 "\tAlternate character set\t\tOther stuff",
-"\tFormatting\t\t\tQuitting me",
+"\tFormatting\t\t\tQuitting MEX",
 ""
 };
 
@@ -154,10 +154,10 @@ char *formatting[] = {
 
 char *quitting[] = {
 " ",
-"Invoking me:  me [options][-h for help] [file(s)]",
+"Invoking MEX:  mex [options][-h for help] [file(s)]",
 " ",
-"\t^C     Exit me",
-"\t^Z     Save this buffer if changed, then Exit me",
+"\t^C     Exit MEX",
+"\t^Z     Save this buffer if changed, then Exit MEX",
 " ",
 "\tAlt-7  Play back log file (stop logging, replay it now)",
 ""
@@ -216,10 +216,10 @@ char *enter_str[] = {
 #if MSDOS
 
 char *help_menu[] = {
-"       me version " VERSION,
+"       MEX version " VERSION,
 "             ^A bedeutet Strg+A -- E- bedeutet Esc",
 " ",
-"Verlassen von me",
+"Verlassen von mex",
 "Cursorsteuerung           Einfuegen und loeschen",
 "veRschieben und Kopieren  Suchen",
 "Transformieren            nichT abdruckbare zeichen",
@@ -358,10 +358,10 @@ char *formatting[] = {
 
 char *quitting[] = {
 " ",
-"Invoking me:  me [options][-h for help] [file(s)]",
+"Invoking MEX:  mex [options][-h for help] [file(s)]",
 " ",
-"\t^C     Exit me",
-"\tF8 (or ^Z) Save this buffer if changed, then Exit me",
+"\t^C     Exit MEX",
+"\tF8 (or ^Z) Save this buffer if changed, then Exit MEX",
 " ",
 "\tAlt-7      Play back log file (stop logging, replay it now)",
 ""
@@ -421,10 +421,10 @@ char *enter_str[] = {
 #if (V7 | VMS | CPM)
 
 char *help_menu[] = {
-"       me version " VERSION,
+"       MEX version " VERSION,
 "             ^A bedeutet Strg+A -- E- bedeutet Esc",
 " ",
-"Verlassen von me",
+"Verlassen von mex",
 "Cursorsteuerung           Einfuegen und loeschen",
 "veRschieben und Kopieren  Suchen",
 "Transformieren            nichT abdruckbare zeichen",
@@ -579,10 +579,10 @@ char *formatting[] = {
 
 char *quitting[] = {
 " ",
-"Aufruf me:  me [optionen][-h fuer Hilfe] [Datei(en)]",
+"Aufruf MEX:  mex [optionen][-h fuer Hilfe] [Datei(en)]",
 " ",
-"^C     me Verlassen ohne zu Speichern",
-"^Z     me Verlassen mit Speichern des aktuellen Puffers",
+"^C     MEX Verlassen ohne zu Speichern",
+"^Z     MEX Verlassen mit Speichern des aktuellen Puffers",
 " ",
 "^X!    Ein Betriebssystemkommando eingeben",
 "^X^C   Mehrere Betriebssystemkommandos eingeben (mit Subshell)",
