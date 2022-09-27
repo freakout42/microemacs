@@ -1,0 +1,22 @@
+#!/usr/bin/ksh
+if [ ! -f /usr/sbin/MY ]
+then
+	cp -i $0 /usr/sbin/MY
+	chmod 755 /usr/sbin/MY
+fi
+set -o emacs
+echo $PATH | grep /usr/ccs/bin || test -d /usr/ccs/bin && PATH=$PATH:/usr/ccs/bin
+EDITOR=me
+export EDITOR
+FCEDIT=$EDITOR
+export FCEDIT
+stty susp undef
+stty dsusp undef
+stty erase '^H'
+alias ll='ls -l'
+alias rm='rm -i'
+alias cp='cp -i'
+alias __A=""  ## Ctrl-P, Up,     Previous
+alias __B=""  ## Ctrl-N, Down,   Next
+alias __C=""  ## Ctrl-F, Right,  Forward
+alias __D=""  ## Ctrl-B, Left,   Back
