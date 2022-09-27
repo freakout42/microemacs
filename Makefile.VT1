@@ -1,64 +1,20 @@
-# Makefile for MEX on Linux
+# Makefile for MEX on Linux dietlibc
 
-# Linux/dietc
 CC=diet cc
-CFLAGS= -O -DVT100 -Dlinux2
-
-# Solaris/GCC
-#CC=gcc
-#CFLAGS= -O3 -DVT100 -Dlinux2
-
-LFLAGS= -static
-LIBS=   
-OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o \
-	search.o term.o window.o word.o
+CFLAGS=-O -DVT100 -Dlinux2
+LIBS=
+SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
+OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
+LDFLAGS=-static
 
 mev: $(OBJ)
-	$(CC) -o $@ $(LFLAGS) $(OBJ) $(LIBS)
+	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
 	strip $@
 
-buffer.o: buffer.c ed.h
-	$(CC) $(CFLAGS) -c buffer.c
-
-cursor.o: cursor.c ed.h
-	$(CC) $(CFLAGS) -c cursor.c
-
-display.o: display.c ed.h
-	$(CC) $(CFLAGS) -c display.c
-
-files.o: files.c ed.h
-	$(CC) $(CFLAGS) -c files.c
-
-help.o: help.c ed.h
-	$(CC) $(CFLAGS) -c help.c
-
-line.o: line.c ed.h
-	$(CC) $(CFLAGS) -c line.c
-
-main.o: main.c ed.h
-	$(CC) $(CFLAGS) -c main.c
-
-random.o: random.c ed.h
-	$(CC) $(CFLAGS) -c random.c
-
-search.o: search.c ed.h
-	$(CC) $(CFLAGS) -c search.c
-
-term.o: term.c ed.h
-	$(CC) $(CFLAGS) -c term.c
-
-window.o: window.c ed.h
-	$(CC) $(CFLAGS) -c window.c
-
-word.o: word.c ed.h
-	$(CC) $(CFLAGS) -c word.c
+$(SRC):	ed.h
 
 help.c: help_c.eng
-	-ln -f $? $@
-
-install: mex
-	strip mex
-	su bin -c "cp mex /usr/local/bin"
+	-ln -f $< $@
 
 clean:
-	rm -f *.o core mex curkeys.h help.c
+	rm -f *.o core mex curkeys.h help.c mev mes me
