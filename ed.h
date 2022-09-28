@@ -1,4 +1,4 @@
-/* $Id: ed.h,v 1.40 2022/08/30 08:04:44 axel Exp $
+/* $Id: ed.h,v 1.41 2022/09/28 11:10:20 axel Exp $
  * This file is the general header file for
  * all parts of the MicroEMACS display editor. It contains
  * definitions used by everyone, and it contains the stuff
@@ -8,56 +8,60 @@
  * which were changed to char.
  * um: for UN*X System V set the defines V7 ``and'' SYS_V to 1 !!
  */
-#define VERSION "5.0"
+#define VERSION "5.1"
 
 #if (VT100)
-#define V7      1                       /* V7 UN*X or Coherent          */
-#define SYS_V   1                       /* System V UN*X                */
-#define ANSI    1			/* Ansi terminal		*/
-#define VT52    0			/* VT52 terminal		*/
+#define V7      1			/* V7 UN*X or Coherent          */
+#define SYS_V   1			/* System V UN*X                */
+#define BSD     0			/* BSD xBSD MacOS               */
+#define ANSI    1			/* Ansi terminal                */
+#define VT52    0			/* VT52 terminal                */
 #define TERMCAP 0			/* Use TERMCAP                  */
-#define VT100   1                       /* Handle VT100 style keypad.   */
+#define VT100   1			/* Handle VT100 style keypad.   */
 #define CURSES	0			/* Use CURSES                   */
 #endif
 
 #if (HP700)
-#define V7      1                       /* V7 UN*X or Coherent          */
-#define SYS_V   1                       /* System V UN*X                */
-#define ANSI    0			/* Ansi terminal		*/
-#define VT52    0			/* VT52 terminal		*/
-#define TERMCAP 0			/* Use TERMCAP                  */
-#define HP700   1                       /* Handle HP700/9x style keypad.*/
-#define CURSES	0			/* Use CURSES                   */
+#define V7      1
+#define SYS_V   1
+#define BSD     0
+#define ANSI    0
+#define VT52    0
+#define TERMCAP 0
+#define HP700   1
+#define CURSES	0
 #endif
 
-#if (hpux | COHERENT | unix | _HPUX_SOURCE | __DARWIN_UNIX03) && !defined(__FreeBSD__) && !defined(VT100) && !defined(HP700)
-#define V7      1                       /* V7 UN*X or Coherent          */
-#define SYS_V   1                       /* System V UN*X                */
-#define ANSI    0			/* Ansi terminal		*/
-#define VT52    0			/* VT52 terminal		*/
-#define TERMCAP 0			/* Use TERMCAP                  */
-#define VT100   0                       /* Handle VT100 style keypad.   */
-#define CURSES	1			/* Use CURSES                   */
+#if (__FreeBSD__ | __APPLE__)
+#define V7      1
+#define SYS_V   1
+#define BSD     1
+#define ANSI    0
+#define VT52    0
+#define TERMCAP 0
+#define VT100   0
+#define CURSES	1
+#else
+#if (hpux | COHERENT | unix | _HPUX_SOURCE | __DARWIN_UNIX03) && !defined(VT100) && !defined(HP700)
+#define V7      1
+#define SYS_V   1
+#define BSD     0
+#define ANSI    0
+#define VT52    0
+#define TERMCAP 0
+#define VT100   0
+#define CURSES	1
 #endif
-
-#if (__FreeBSD__)
-#define V7      1                       /* V7 UN*X or Coherent          */
-#define SYS_V   1                       /* System V UN*X                */
-#define ANSI    0			/* Ansi terminal		*/
-#define VT52    0			/* VT52 terminal		*/
-#define TERMCAP 0			/* Use TERMCAP                  */
-#define VT100   0                       /* Handle VT100 style keypad.   */
-#define CURSES	1			/* Use CURSES                   */
 #endif
 
 #if (__BEOS__)
-#define V7      1                       /* V7 UN*X or Coherent          */
-#define SYS_V   1                       /* System V UN*X                */
-#define ANSI    0			/* Ansi terminal		*/
-#define VT52    0			/* VT52 terminal		*/
-#define TERMCAP 1			/* Use TERMCAP                  */
-#define VT100   1                       /* Handle VT100 style keypad.   */
-#define CURSES	0			/* Use CURSES                   */
+#define V7      1
+#define SYS_V   1
+#define ANSI    0
+#define VT52    0
+#define TERMCAP 1
+#define VT100   1
+#define CURSES	0
 #endif
 
 #if (MSDOS)				/* MS-DOS			*/
@@ -222,6 +226,11 @@
 #define CFYANK  0x0004			/* mb: Last command was a yank  */
 #define CFSPLIT 0x0008			/* mb: Last split the window    */
 
+#if (TERMC & CURSES)
+#include <curses.h>
+#include <term.h>
+#include <termios.h>
+#endif
 #if ! (defined(WINDOW) || defined(_CURSES_INCLUDED) || defined(_CURSES_H_) || defined(_CURSES_H) || defined(CURSES_H) || defined(__NCURSES_H))
 /*
  * There is a window structure allocated for

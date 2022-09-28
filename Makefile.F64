@@ -1,59 +1,32 @@
-# Makefile for MEX on FreeBSD 7.0 amd64
+# Makefile for MEX on FreeBSD amd64
 
-CFLAGS= -O3 -Dfreebsd7 -Wno-return-type -w
-LFLAGS= -s
-LIBS=   -lcurses
-OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o \
-	search.o term.o window.o word.o
+CFLAGS=-O3
+LIBS=-lcurses
+LDFLAGS=-s
+SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
+OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
+USRINC=/usr/include
 
-me: $(OBJ)
-	cc -o me $(LFLAGS) $(OBJ) $(LIBS)
+mex: $(OBJ)
+	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
+	strip $@
 
-buffer.o: buffer.c ed.h
-	cc $(CFLAGS) -c buffer.c
+$(SRC):	ed.h
 
-cursor.o: cursor.c ed.h
-	cc $(CFLAGS) -c cursor.c
-
-display.o: display.c ed.h
-	cc $(CFLAGS) -c display.c
-
-files.o: files.c ed.h
-	cc $(CFLAGS) -c files.c
-
-help.o: help.c ed.h
-	cc $(CFLAGS) -c help.c
-
-line.o: line.c ed.h
-	cc $(CFLAGS) -c line.c
-
-curkeys.h:
-	grep 'define[^K]*KEY_' </usr/include/ncurses.h >$@
-
-main.o: main.c ed.h curkeys.h
-	cc $(CFLAGS) -c main.c
-
-random.o: random.c ed.h
-	cc $(CFLAGS) -c random.c
-
-search.o: search.c ed.h
-	cc $(CFLAGS) -c search.c
+main.o: main.c curkeys.h
+	$(CC) $(CFLAGS) -Wno-missing-braces -c main.c
 
 term.o: term.c ed.h
-	cc $(CFLAGS) -DCURSES -c term.c
+	$(CC) $(CFLAGS) -I/usr/include/ncurses -c term.c
 
-window.o: window.c ed.h
-	cc $(CFLAGS) -c window.c
-
-word.o: word.c ed.h
-	cc $(CFLAGS) -c word.c
+curkeys.h:
+	grep 'define[^K]*KEY_' <$(USRINC)/ncurses.h >$@
 
 help.c: help_c.eng
-	-ln -f $? $@
+	-ln -f $< $@
 
-install: me
-	strip me
-	cp me /usr/local/bin
+install: mex
+	cp mex bin/me.`uname -i`
 
 clean:
-	rm -f *.o core me mex help.c curkeys.h
+	rm -f *.o core mex curkeys.h help.c mev mes me

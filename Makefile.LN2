@@ -1,14 +1,14 @@
 # Makefile for MEX on Linux
 
-CFLAGS=-O3 -Wall -Werror -Dlinux2
+CFLAGS=-O3 -Wall -Werror
 LIBS=-lncurses
 SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
 OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
-SCP=/opt/ssh/bin/scp
 USRINC=/usr/include
 
 mex: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
+	strip $@
 
 $(SRC):	ed.h
 
@@ -16,7 +16,7 @@ main.o: main.c curkeys.h
 	$(CC) $(CFLAGS) -Wno-missing-braces -c main.c
 
 term.o: term.c ed.h
-	$(CC) $(CFLAGS) -DCURSES -I/usr/include/ncurses -c term.c
+	$(CC) $(CFLAGS) -I/usr/include/ncurses -c term.c
 
 curkeys.h:
 	grep 'define[^K]*KEY_' <$(USRINC)/ncurses.h >$@
@@ -25,10 +25,7 @@ help.c: help_c.eng
 	-ln -f $< $@
 
 install: mex
-	strip mex
 	cp mex bin/me.`uname -i`
-	$(SCP) mex bongo:/opt/arx/bin/me
-	$(SCP) mex bongo:/opt/xbase/bin/me
 
 clean:
 	rm -f *.o core mex curkeys.h help.c mev mes me

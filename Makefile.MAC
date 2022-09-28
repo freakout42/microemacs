@@ -1,7 +1,6 @@
 # Makefile for MEX on MacOS 10.15 Xcode-12.4
 
-CFLAGS=-g -Dfreebsd7
-# -Wno-implicit-function-declaration -Wno-implicit-int -Wno-return-type -Wno-comment
+CFLAGS=-g
 LIBS=-lcurses
 SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
 OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
@@ -9,6 +8,7 @@ USRINC=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Deve
 
 mex: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
+	strip $@
 
 $(SRC): ed.h
 
@@ -23,10 +23,6 @@ curkeys.h:
 
 help.c: help_c.eng
 	-ln -f $< $@
-
-install: mex
-	strip mex
-	cp mex \$HOME/bin/me
 
 clean:
 	rm -f *.o core mex help.c

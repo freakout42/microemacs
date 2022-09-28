@@ -8,11 +8,7 @@
  * All operating systems.
  */
 
-#if	CURSES
-#include <curses.h>
-#include <term.h>
-#include <termios.h>
-#endif
+#define TERMC 1
 #include	"ed.h"
 
 #if AtST
@@ -81,19 +77,12 @@ ttreverse()
 struct  sgttyb  ostate;			/* saved tty state */
 struct	sgttyb	nstate;			/* values for editor mode */
 #else
-#ifdef linux2
-#include        <termio.h>
-#else
-#ifdef freebsd7
-#include        <sys/termios.h>
-#else
-#include        <sys/termio.h>
-#endif
-#endif
-#ifdef freebsd7
+#if BSD
+#include <termios.h>
 struct  termios  ostate;
 struct  termios  nstate;
 #else
+#include <termio.h>
 struct  termio  ostate;
 struct  termio  nstate;
 #endif
