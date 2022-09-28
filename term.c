@@ -220,6 +220,10 @@ int ttopen()
 #endif
 #endif
 #endif
+#if VT100
+	term.t_ncol = (getenv("COLUMNS") ? atoi(getenv("COLUMNS")) : NCOL);
+	term.t_nrow = (getenv("LINES")   ? atoi(getenv("LINES"))   : NROW) - 1;
+#endif
 return 0;
 }
 
