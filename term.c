@@ -11,6 +11,16 @@
 #define TERMC 1
 #include	"ed.h"
 
+#if W32
+#include <windows.h>
+#include <stdio.h>
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING  0x0004
+#endif
+static HANDLE stdoutHandle;
+static DWORD outModeInit;
+#endif
+
 #if AtST
 extern int vidrev;
 #endif
@@ -39,6 +49,10 @@ short	iochan;				/* TTY I/O channel		*/
 
 #if	CPM
 #include	<bdos.h>
+#endif
+
+#if W32
+#include	<conio.h>
 #endif
 
 #if	MSDOS
@@ -146,6 +160,22 @@ int ttopen()
 #endif
 #if	CPM
 #endif
+#if VT100
+term.t_ncol = (getenv("COLUMNS") ? atoi(getenv("COLUMNS")) : NCOL);
+term.t_nrow = (getenv("LINES")   ? atoi(getenv("LINES"))   : NROW) - 1;
+#endif
+#if W32
+DWORD outMode = 0;
+CONSOLE_SCREEN_BUFFER_INFO csbi;
+stdoutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+GetConsoleMode(stdoutHandle, &outMode);
+outModeInit = outMode;
+outMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+SetConsoleMode(stdoutHandle, outMode);
+GetConsoleScreenBufferInfo(stdoutHandle, &csbi);
+term.t_ncol = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+term.t_nrow = csbi.srWindow.Bottom - csbi.srWindow.Top;
+#endif
 #if	MSDOS
 	struct text_info tinfo;
 	putch(' ');			/* get orig attr for normvideo() */
@@ -220,10 +250,6 @@ int ttopen()
 #endif
 #endif
 #endif
-#if VT100
-	term.t_ncol = (getenv("COLUMNS") ? atoi(getenv("COLUMNS")) : NCOL);
-	term.t_nrow = (getenv("LINES")   ? atoi(getenv("LINES"))   : NROW) - 1;
-#endif
 return 0;
 }
 
@@ -256,9 +282,13 @@ int ttclose()
 		ttputs ("\033c0\033bo");
 	}
 	vt52nrml();
+#endif
 #if ST_DA
 	ttputs ("\033f");		/* hide text cursor */
 #endif
+#if	W32
+printf("\x1b[0m");	
+SetConsoleMode(stdoutHandle, outModeInit);
 #endif
 #if	MSDOS
 	if (vidmode >= 0)
@@ -320,6 +350,9 @@ int ttputc(c)
 #endif
 #if	MSDOS
 	putch(c);		/* Turbo C library MS-DOS call	*/
+#endif
+#if	W32
+	fputc(c, stdout);
 #endif
 #if	V7
 #if	CURSES
@@ -401,7 +434,7 @@ ttpending()
 #if MSDOS
 	return (bioskey(1));		/* Turbo C specific */
 #endif
-#if (CPM | VMS)
+#if (CPM | VMS | W32)
 	return (FALSE);
 #endif
 }
@@ -470,7 +503,7 @@ int ttgetc()
 	}
 	return (c);
 #endif
-#if	MSDOS
+#if	(MSDOS | W32)
 	int k;
 
 	k = getch();
@@ -525,7 +558,7 @@ hardputc(c)
 		return (TRUE);
 	}
 #endif
-#if (V7 | VMS | CPM)
+#if (V7 | VMS | CPM | W32)
 	return (FALSE);
 #endif
 }
@@ -681,6 +714,17 @@ TERM	term	= {
 	ttpending
 };
 
+ansiparm(n)
+register int	n;
+{
+	register int	q;
+
+	q = n/10;
+	if (q != 0)
+		ansiparm(q);
+	ttputc((n%10) + '0');
+}
+
 ansimove(row, col)
 {
 	ttputc(ESC);
@@ -715,17 +759,6 @@ ansihglt()
 ansinrml()
 {
 	ttputs("\033[m");
-}
-
-ansiparm(n)
-register int	n;
-{
-	register int	q;
-
-	q = n/10;
-	if (q != 0)
-		ansiparm(q);
-	ttputc((n%10) + '0');
 }
 
 ansiopen()
