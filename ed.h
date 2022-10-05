@@ -8,7 +8,7 @@
  * which were changed to char.
  * um: for UN*X System V set the defines V7 ``and'' SYS_V to 1 !!
  */
-#define VERSION "5.1"
+#define VERSION "5.2"
 
 #if (VT100)
 #define V7      1			/* V7 UN*X or Coherent          */
@@ -19,6 +19,18 @@
 #define TERMCAP 0			/* Use TERMCAP                  */
 #define VT100   1			/* Handle VT100 style keypad.   */
 #define CURSES	0			/* Use CURSES                   */
+#endif
+
+#if (_WIN32)
+#define V7      0
+#define SYS_V   0
+#define BSD     0
+#define W32     1
+#define ANSI    1
+#define VT52    0
+#define TERMCAP 0
+#define VT100   1
+#define CURSES	0
 #endif
 
 #if (HP700)
@@ -42,7 +54,7 @@
 #define VT100   0
 #define CURSES	1
 #else
-#if (hpux | COHERENT | unix | _HPUX_SOURCE | __DARWIN_UNIX03) && !defined(VT100) && !defined(HP700)
+#if (hpux | COHERENT | unix | _HPUX_SOURCE | __DARWIN_UNIX03) && !defined(VT100) && !defined(HP700) && !defined(_WIN32)
 #define V7      1
 #define SYS_V   1
 #define BSD     0

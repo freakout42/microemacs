@@ -16,7 +16,9 @@
 #define WFDEBUG 0			/* Window flag debug.		*/
 
 extern int getkey();
+#if VT100 && !defined(W32)
 extern int escseq();
+#endif
 
 typedef struct  VIDEO {
 	int	v_col;			/* mb: line len / scrn offset	*/
@@ -372,7 +374,7 @@ start:
 #if AtST
 		cp = "MEX -- Buffer: ";	/* mb: AtST has 'Help' key */
 #endif
-#if MSDOS
+#if (MSDOS | W32)
 #if HELP
 		cp = "MEX -- F1 for help -- ";
 #else
@@ -814,7 +816,7 @@ char	*prompt;
 		if (c==(FUNC|0x61))
 			return (ABORT);
 #endif
-#if MSDOS
+#if (MSDOS | W32)
 		if (c==(FUNC|0x3C))
 			return (ABORT);
 #endif
@@ -883,7 +885,7 @@ loop:
 	(*term.t_move)(row, col+i);
 	(*term.t_flush)();
 	c = getkey();
-#if (VT100)
+#if VT100 && !defined(W32)
 	if (c=='\\' && doesc && !escmode) {
 			c = getkey();
 			escmode = TRUE;
@@ -915,7 +917,7 @@ loop:
 	if (c==(CNTL|'G') || c==(FUNC|0x61)	/* Undo, abort */
 	    || c==(CNTL|'C') || c==(FUNC|0x62))	/* Help */
 #endif
-#if	MSDOS
+#if	(MSDOS | W32)
 	if (c==(CNTL|'G') || c==(FUNC|0x3C)	/* Undo (F2) */
 	    || c==(CNTL|'C') || c==(FUNC|0x3B))	/* Help (F1) */
 #endif
@@ -930,7 +932,7 @@ loop:
 	if (c == (FUNC|0x47))			/* Clr/Home */
 		goto start;
 #endif
-#if MSDOS
+#if (MSDOS | W32)
 	if (c == (FUNC|0x52))			/* Insert */
 		goto start;
 #endif
@@ -956,13 +958,13 @@ loop:
 
 	if (c==UP || c==DOWN)
 		return (c);
-#if (AtST | MSDOS)
+#if (AtST | MSDOS | W32)
 	if (c==(FUNC|0x48))
 		return (UP);
 	if (c==(FUNC|0x50))
 		return (DOWN);
 #endif
-#if (AtST | MSDOS)
+#if (AtST | MSDOS | W32)
 	if (c==RIGHT || c==(FUNC|0x4D)) {
 #else
 	if (c == RIGHT) {
@@ -976,7 +978,7 @@ loop:
 		}
 		goto loop;
 	}
-#if (AtST | MSDOS)
+#if (AtST | MSDOS | W32)
 	if (c==LEFT || c==(FUNC|0x4B)) {
 #else
 	if (c == LEFT) {
@@ -993,7 +995,7 @@ loop:
 #if AtST
 	if (c==(CNTL|'A') || c==(FUNC|SHFT|0x73)) {
 #endif
-#if MSDOS
+#if (MSDOS | W32)
 	if (c==(CNTL|'A') || c==(FUNC|0x47)) {
 #endif
 #if (V7 | VMS | CPM)
@@ -1006,7 +1008,7 @@ loop:
 #if AtST
 	if (c==(CNTL|'E') || c==(FUNC|SHFT|0x74)) {
 #endif
-#if MSDOS
+#if (MSDOS | W32)
 	if (c==(CNTL|'E') || c==(FUNC|0x4F)) {
 #endif
 #if (V7 | VMS | CPM)
@@ -1026,7 +1028,7 @@ loop:
 #if AtST
 	if (c==(FUNC|0x0E) || (deldir && c==(FUNC|0x53))) {	/* BS */
 #endif
-#if MSDOS
+#if (MSDOS | W32)
 	if (c==(CNTL|'H') || (deldir && c==(FUNC|0x53))) {	/* BS */
 #endif
 #if (V7 | VMS | CPM)
@@ -1044,7 +1046,7 @@ loop:
 #if AtST
 	if (c==(FUNC|0x53) || c==(CNTL|'D') || c==(FUNC|0x0E)) {
 #endif
-#if MSDOS
+#if (MSDOS | W32)
 	if (c==(FUNC|0x53) || c==(CNTL|'D') || c==(CNTL|'H')) {
 #endif
 #if (V7 | VMS | CPM)
@@ -1065,7 +1067,7 @@ loop:
 #if AtST
 	if (c==(CNTL|'K') || c==(FUNC|0x3E) || c==(FUNC|SHFT|0x53)) {
 #endif
-#if MSDOS
+#if (MSDOS | W32)
 	if (c==(CNTL|'K') || c==(FUNC|0x3F)) {
 #endif
 #if (V7 | VMS | CPM)

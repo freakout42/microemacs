@@ -35,7 +35,7 @@ void edmore(char fname[]);
 #include	 <gemdefs.h>
 #endif
 
-#if MSDOS
+#if (MSDOS | W32)
 #include	<fcntl.h>
 #include	<conio.h>
 #endif
@@ -94,7 +94,7 @@ char	pat[NPAT] = {'\0'};		/* Pattern			*/
 #if AtST
 int	vidrev	= FALSE;		/* may be changed by cmd line	*/
 #endif
-#if MSDOS
+#if (MSDOS)
 int	origvidmode;			/* save on entry		*/
 int	nrmlvidattr;			/* normal in our vidmode	*/
 int	curvidattr;			/* update all along		*/
@@ -229,7 +229,7 @@ KEYTAB  keytab[] = {
 	CNTL|'F',		forwchar,
 	CNTL|'G',		undo,
      ED|CNTL|'H',		backdel,
-#if MSDOS
+#if (MSDOS | W32)
      ED|CNTL|0x3F,		bkill,		/* mb: ^BS */
 #else
      ED|CNTL|0x3F,		fbdel,		/* mb: DELETE key */
@@ -246,12 +246,7 @@ KEYTAB  keytab[] = {
 	CNTL|'N',		forwline,
      ED|CNTL|'O',		openline,
 	CNTL|'P',		backline,
-#if	V7
-	/* skip these, why? */
 	CNTL|'S',		forwsearch,
-#else
-	CNTL|'S',		forwsearch,
-#endif
 	CNTL|'R',		backsearch,
      ED|CNTL|'T',		twiddle,
 	CNTL|'V',		forwpage,
@@ -344,7 +339,7 @@ KEYTAB  keytab[] = {
 	META|'P',		backparag,	/* mb: added */
 #endif
 
-#if	(AtST | MSDOS)
+#if	(AtST | MSDOS | W32)
 	CTLX|CNTL|'H',		hardcopy,	/* mb: added */
 #endif
 
@@ -459,8 +454,7 @@ KEYTAB  keytab[] = {
      */
 #endif
 
-#if	MSDOS					/* mb: added */
-
+#if	(MSDOS | W32)
 	FUNC|0x4B,		backchar,	/* <-- */
 	FUNC|0x73,		backword,	/* ^<- */
 	FUNC|META|0x4B,		gotobol,
@@ -655,7 +649,7 @@ execute(c, f, n)
 	} /* else fall thru to "view-only" message */
 ascii:
 	if (! (curbp->b_flag & BFEDIT)) {
-#if (AtST | MSDOS)
+#if (AtST | MSDOS | W32)
 		mlwrite("View-only mode - Alt-E to edit");
 #else
 		mlwrite("View-only mode - ^X^E to edit");
@@ -714,7 +708,7 @@ void usage()
 	Cnecin();
 	_exit(0);
 #endif
-#if MSDOS
+#if (MSDOS)
 	cputs("\r\nMEX version " VERSION "\r\n");
 	cputs("\r\nUsage: mex [options] [file(s)]\r\n");
 	cputs("\r\nOptions:\r\n");
@@ -739,8 +733,8 @@ void usage()
 	cputs("-v      view-only mode\r\n\n");
 	_exit(0);
 #endif
-#if (V7 | VMS | CPM)
-	puts("\nMEX version 2.2");
+#if (V7 | VMS | CPM | W32)
+	puts("\nMEX version " VERSION);
 	puts("\nUsage: mex [options] [file(s)]");
 	puts("Options:");
 	puts("\t-c #\t# columns");
@@ -772,10 +766,52 @@ void usage()
 #define register		/* avoid that in main()! */
 #endif
 
+#if VT100 && !defined(W32)
+int
+escseq(c)
+	register int c;
+{ 
+	if (c=='[' || c=='O') {		/* Arrows and extras.	*/
+		c = getkey();
+		if (c == 'A')
+			return (CNTL | 'P');
+		if (c == 'B')
+			return (CNTL | 'N');
+		if (c == 'C')
+			return (CNTL | 'F');
+		if (c == 'D')
+			return (CNTL | 'B');
+
+		if (c == 'L')
+			return (META | 'I');
+		if (c == 'H')
+			return (CNTL | 'A');
+		if (c == 'F')
+			return (CNTL | 'E');
+		if (c == 'I')
+			return (META | 'V');
+		if (c == 'G')
+			return (CNTL | 'V');
+
+		if (c == 'P')	/* PF1 */
+			return (META | 'B');
+		if (c == 'Q')	/* PF2 */
+			return (META | 'F');
+		if (c == 'R')	/* PF3 */
+			return (META | '.');
+		if (c == 'S')	/* PF4 */
+			return (CTLX | 'E');
+		/* else */
+			return (0);
+	}
+	return (0);
+}
+#endif
+
 #if MSDOS
-int _main(argc, argv)		/* mb: completely rewritten */
+int _main(argc, argv)
 #else
-int main(argc, argv)		/* mb: completely rewritten */
+int main(argc, argv)
 #endif
 	int	argc;
 	char	*argv[];
@@ -868,7 +904,7 @@ int main(argc, argv)		/* mb: completely rewritten */
 				usage();
 		} else {			/* a filename	*/
 			clfn[nfiles++] = cp;
-#if (AtST | MSDOS | CPM)
+#if (AtST | MSDOS | CPM | W32)
 			cpyfname (cp, cp);	/* tolower	*/
 #endif
 		}
@@ -948,12 +984,19 @@ int main(argc, argv)		/* mb: completely rewritten */
 			state = ESC;
 			break;
 		}
+#if W32
+		if (c == 0xE0) {
+			c = getkey();
+			state = ESC;
+			break;
+		}
+#endif
 		if (c == (CNTL|'X')) {
 			c = getkey();
 #if AtST
 			if (c==(FUNC|0x61) || c==(CNTL|'G')) { /* Undo */
 #endif
-#if MSDOS
+#if (MSDOS | W32)
 			if (c==(FUNC|0x3C) || c==(CNTL|'G')) { /* F2 */
 #endif
 #if (V7 | VMS | CPM)
@@ -981,7 +1024,7 @@ int main(argc, argv)		/* mb: completely rewritten */
 			state = ARG;
 			break;
 		}
-#if (VT100)
+#if VT100 && !defined(W32)
 		if (c=='[' || c=='O') {
 			state = EXEC;
 			c = escseq(c);
@@ -1024,10 +1067,62 @@ int main(argc, argv)		/* mb: completely rewritten */
 			break;
 			}
 #endif
+#if (W32)
+		if (c == 'H') {
+			c = (CNTL | 'P');
+			state = BASE;
+			break;
+			}
+		if (c == 'P') {
+			c = (CNTL | 'N');
+			state = BASE;
+			break;
+			}
+		if (c == 'K') {
+			c = (CNTL | 'B');
+			state = BASE;
+			break;
+			}
+		if (c == 'M') {
+			c = (CNTL | 'F');
+			state = BASE;
+			break;
+			}
+		if (c == 'Q') {
+			c = (CNTL | 'V');
+			state = BASE;
+			break;
+			}
+		if (c == 'I') {
+			c = (META | 'V');
+			state = BASE;
+			break;
+			}
+		if (c == 'G') {
+			c = (CNTL | 'A');
+			state = BASE;
+			break;
+			}
+		if (c == 'O') {
+			c = (CNTL | 'E');
+			state = BASE;
+			break;
+			}
+		if (c == 'S') {
+			c = (CNTL | 'D');
+			state = BASE;
+			break;
+			}
+		if (c == 'R') {
+			c = (ED | FUNC | 0x52);
+			state = BASE;
+			break;
+			}
+#endif
 #if AtST
 		if (c==(FUNC|0x61) || c==(CNTL|'G')) {	/* Undo */
 #endif
-#if MSDOS
+#if (MSDOS | W32)
 		if (c==(FUNC|0x3C) || c==(CNTL|'G')) {  /* F2 */
 #endif
 #if (V7 | VMS | CPM)
@@ -1222,48 +1317,6 @@ edmore(fname)
 		mlwrite("Error reading next file!");
 	prevwind(0,1);
 }
-
-#if  VT100
-int
-escseq(c)
-	register int c;
-{ 
-	if (c=='[' || c=='O') {		/* Arrows and extras.	*/
-		c = getkey();
-		if (c == 'A')
-			return (CNTL | 'P');
-		if (c == 'B')
-			return (CNTL | 'N');
-		if (c == 'C')
-			return (CNTL | 'F');
-		if (c == 'D')
-			return (CNTL | 'B');
-
-		if (c == 'L')
-			return (META | 'I');
-		if (c == 'H')
-			return (CNTL | 'A');
-		if (c == 'F')
-			return (CNTL | 'E');
-		if (c == 'I')
-			return (META | 'V');
-		if (c == 'G')
-			return (CNTL | 'V');
-
-		if (c == 'P')	/* PF1 */
-			return (META | 'B');
-		if (c == 'Q')	/* PF2 */
-			return (META | 'F');
-		if (c == 'R')	/* PF3 */
-			return (META | '.');
-		if (c == 'S')	/* PF4 */
-			return (CTLX | 'E');
-		/* else */
-			return (0);
-	}
-	return (0);
-}
-#endif
 
 /*
  * Read in a key.
