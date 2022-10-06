@@ -56,7 +56,7 @@ void edmore(char fname[]);
 #define DASTART	990		/* starting the DA	*/
 #define DACLOSE	991		/* closing the DA	*/
 
-char	*rcsid = "$Id: main.c,v 1.33 2022/08/30 08:04:44 axel Exp $";
+char	*rcsid = "$Id: main.c,v 1.34 2022/10/05 15:35:29 axel Exp $";
 int	logit = LOGIT;			/* mb: log keystrokes		*/
 int	playback = FALSE;		/* mb: playback from log file	*/
 #if ST_DA
@@ -766,7 +766,7 @@ void usage()
 #define register		/* avoid that in main()! */
 #endif
 
-#if VT100 && !defined(W32)
+#if VT100 && !W32
 int
 escseq(c)
 	register int c;
@@ -1024,7 +1024,7 @@ int main(argc, argv)
 			state = ARG;
 			break;
 		}
-#if VT100 && !defined(W32)
+#if VT100 && !W32
 		if (c=='[' || c=='O') {
 			state = EXEC;
 			c = escseq(c);

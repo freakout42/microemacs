@@ -292,7 +292,7 @@ char    *fn;
 
 #else	/* if not BFILES */
 
-#if AtST
+#if AtST || W32
 	if ((ffp=fopen(fn, "br")) == NULL)  /* we handle crlf ourselves */
 #else
 	if ((ffp=fopen(fn, "r")) == NULL)

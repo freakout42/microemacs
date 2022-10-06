@@ -16,7 +16,7 @@
 #define WFDEBUG 0			/* Window flag debug.		*/
 
 extern int getkey();
-#if VT100 && !defined(W32)
+#if VT100 && !W32
 extern int escseq();
 #endif
 
@@ -885,7 +885,7 @@ loop:
 	(*term.t_move)(row, col+i);
 	(*term.t_flush)();
 	c = getkey();
-#if VT100 && !defined(W32)
+#if VT100 && !W32
 	if (c=='\\' && doesc && !escmode) {
 			c = getkey();
 			escmode = TRUE;

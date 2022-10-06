@@ -14,6 +14,7 @@
 #define V7      1			/* V7 UN*X or Coherent          */
 #define SYS_V   1			/* System V UN*X                */
 #define BSD     0			/* BSD xBSD MacOS               */
+#define W32     0			/* Windows 32                   */
 #define ANSI    1			/* Ansi terminal                */
 #define VT52    0			/* VT52 terminal                */
 #define TERMCAP 0			/* Use TERMCAP                  */
@@ -37,6 +38,7 @@
 #define V7      1
 #define SYS_V   1
 #define BSD     0
+#define W32     0
 #define ANSI    0
 #define VT52    0
 #define TERMCAP 0
@@ -48,6 +50,7 @@
 #define V7      1
 #define SYS_V   1
 #define BSD     1
+#define W32     0
 #define ANSI    0
 #define VT52    0
 #define TERMCAP 0
@@ -58,6 +61,7 @@
 #define V7      1
 #define SYS_V   1
 #define BSD     0
+#define W32     0
 #define ANSI    0
 #define VT52    0
 #define TERMCAP 0
@@ -69,6 +73,8 @@
 #if (__BEOS__)
 #define V7      1
 #define SYS_V   1
+#define BSD     0
+#define W32     0
 #define ANSI    0
 #define VT52    0
 #define TERMCAP 1
