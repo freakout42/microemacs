@@ -292,8 +292,10 @@ char    *fn;
 
 #else	/* if not BFILES */
 
-#if AtST || W32
+#if AtST
 	if ((ffp=fopen(fn, "br")) == NULL)  /* we handle crlf ourselves */
+#elif W32
+	if ((ffp=fopen(fn, "rb")) == NULL)  /* we handle crlf ourselves */
 #else
 	if ((ffp=fopen(fn, "r")) == NULL)
 #endif
@@ -337,6 +339,9 @@ char    *fn;
 
 	if ((fd=creat(fn, 0666, "rfm=var", "rat=cr")) < 0
 	|| (ffp=fdopen(fd, "w")) == NULL)
+		return (FIOERR);
+#elif W32
+	if ((ffp=fopen(fn, "wb")) == NULL)
 		return (FIOERR);
 #else
 	if ((ffp=fopen(fn, "w")) == NULL)

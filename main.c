@@ -56,7 +56,7 @@ void edmore(char fname[]);
 #define DASTART	990		/* starting the DA	*/
 #define DACLOSE	991		/* closing the DA	*/
 
-char	*rcsid = "$Id: main.c,v 1.34 2022/10/05 15:35:29 axel Exp $";
+char	*rcsid = "$Id: main.c,v 1.35 2022/10/06 05:45:54 axel Exp $";
 int	logit = LOGIT;			/* mb: log keystrokes		*/
 int	playback = FALSE;		/* mb: playback from log file	*/
 #if ST_DA
