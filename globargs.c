@@ -89,7 +89,7 @@ savearg(arg, argv, argc, alloc)
     return argv;
 }
 
-main(argc, argv, envp)
+int main(argc, argv, envp)
     int     argc;
     char  **argv;
     char  **envp;
@@ -131,5 +131,5 @@ main(argc, argv, envp)
     }
     /* Some programs expect that argv[argc] is NULL. */
     nargv = savearg(NULL, nargv, nargc, 0);
-    _main(nargc, nargv, envp);
+    return _main(nargc, nargv, envp);
 }

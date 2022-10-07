@@ -60,7 +60,7 @@ short	iochan;				/* TTY I/O channel		*/
 #include	<dos.h>
 #include	<conio.h>
 extern int origvidmode, nrmlvidattr, curvidattr, vidrev, vidmode, directvid;
-ttinverse()
+void ttinverse()
 {
 	int fore, back, attr;
 	attr = nrmlvidattr;
@@ -70,12 +70,12 @@ ttinverse()
 	textattr (attr | 0x00);			/* hi-lite fore with 0x08 */
 	curvidattr = attr;
 }
-ttnormal()
+void ttnormal()
 {
 	textattr (nrmlvidattr | 0x00);		/* hi-lite fore with 0x08 */
 	curvidattr = nrmlvidattr;
 }
-ttreverse()
+void ttreverse()
 {
 	if (curvidattr == nrmlvidattr)
 		ttinverse();
@@ -540,9 +540,11 @@ int
 hardputc(c)
 	int c;
 {
-#if AtST
+#if AtST | MSDOS
 	int s;
 	extern int hdev;
+#endif
+#if AtST
 	return (Bconout (hdev, c));
 #endif
 #if MSDOS
@@ -928,11 +930,11 @@ extern  int	ttgetc();
 extern  int	ttputc();
 extern  int	ttflush();
 extern  int	ttclose();
-extern  int	coniomove();
-extern  int	conioeeop();
-extern  int	coniohglt();
+extern  void	coniomove();
+extern  void	conioeeop();
+extern  void	coniohglt();
 extern  int	conionrml();
-extern  int	coniobeep();
+extern  void	coniobeep();
 extern	void	clreol();
 
 /*
@@ -957,12 +959,12 @@ TERM	term	= {
 	ttpending
 };
 
-coniomove(row, col)
+void coniomove(row, col)
 {
 	gotoxy (col+1, row+1);
 }
 
-conioeeop()
+void conioeeop()
 {
 	int i;
 
@@ -974,7 +976,7 @@ conioeeop()
 	gotoxy (1, 1);
 }
 
-coniobeep()
+void coniobeep()
 {
 	ttputc(BEL);
 }

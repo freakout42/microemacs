@@ -23,10 +23,10 @@ curkeys.h:
 	grep 'define[^K]*KEY_' <$(USRINC)/ncurses.h >$@
 
 help.c: help_c.eng
-	-ln -f $< $@
+	-ln -f help_c.eng $@
 
 install: mex
-	cp mex bin/me.`uname -i`
+	cp mex bin/me.`uname -s`-`uname -p`
 
 clean:
 	rm -f *.o core mex curkeys.h help.c mev mes me

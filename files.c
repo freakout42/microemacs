@@ -294,7 +294,7 @@ char    *fn;
 
 #if AtST
 	if ((ffp=fopen(fn, "br")) == NULL)  /* we handle crlf ourselves */
-#elif W32
+#elif MSDOS | W32
 	if ((ffp=fopen(fn, "rb")) == NULL)  /* we handle crlf ourselves */
 #else
 	if ((ffp=fopen(fn, "r")) == NULL)
@@ -340,7 +340,7 @@ char    *fn;
 	if ((fd=creat(fn, 0666, "rfm=var", "rat=cr")) < 0
 	|| (ffp=fdopen(fd, "w")) == NULL)
 		return (FIOERR);
-#elif W32
+#elif MSDOS | W32
 	if ((ffp=fopen(fn, "wb")) == NULL)
 		return (FIOERR);
 #else
@@ -1061,7 +1061,7 @@ wopenlog()
 	return (TRUE);
 }
 
-closelogf()
+void closelogf()
 {
 	if (loghand >= 0)
 #if AtST
@@ -1073,25 +1073,11 @@ closelogf()
 	loghand = (-1);
 }
 
-int
-putlog(c)
-	int c;
-{
-	int tmp;
-	logbuf[logfc++] = c;
-	if (logfc >= LOGFLUSH) {
-		tmp = logfc;
-		if (flushlog(TRUE) != tmp)
-			return (EOF);		/* error */
-	}
-	return (c);
-}
-
-int
+void
 flushlog(flag)
 	int flag;
 {
-	int size = 0;
+	/*int size = 0;*/
 
 	if (flag) {
 		if (loghand>=0 && logfc>0)
@@ -1099,11 +1085,25 @@ flushlog(flag)
 			size = (int) Fwrite(loghand, (long)logfc, logbuf);
 #endif
 #if MSDOS
-			size = _write (loghand, logbuf, (int)logfc);
+			/*size = */_write (loghand, logbuf, (int)logfc);
 #endif
 		logfc = 0;
 	}
-	return (size);
+/*	return (size); */
+}
+
+int
+putlog(c)
+	int c;
+{
+	/*int tmp;*/
+	logbuf[logfc++] = c;
+	if (logfc >= LOGFLUSH) {
+		/*tmp = logfc;*/
+		/*if (*/flushlog(TRUE)/* != tmp)
+			return (EOF)*/;		/* error */
+	}
+	return (c);
 }
 
 int
