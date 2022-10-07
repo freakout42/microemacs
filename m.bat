@@ -5,6 +5,6 @@ del *.obj
 del me.exe
 del mex.exe
 make -fmakefile.tc2 mex.exe
-lzexe mex.exe
-copy mex.exe me.exe
+rem lzexe mex.exe
+rem copy mex.exe me.exe
 set PATH=%OLDPATH%

@@ -1138,7 +1138,7 @@ verbatim:
 #ifdef __STDC__
 void mlwrite(char *fmt, ...)
 #else
-mlwrite(fmt)
+void mlwrite(fmt)
 	char	*fmt;
 #endif
 {

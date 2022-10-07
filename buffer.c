@@ -413,7 +413,7 @@ int makelist(buffer, data)
 			*cp1++ = c;
 		*cp1++ = ' ';
 		cp2 = &bp->b_bname[0];		/* Buffer name		*/
-		for (i=0; (c = *cp2++) && i<14; i++)
+		for (i=0; (c = *cp2++)!=0 && i<14; i++)
 			*cp1++ = c;
 		if (c)  *cp1++ = '$';
 		cp2 = &bp->b_fname[0];		/* File name		*/
@@ -421,7 +421,7 @@ int makelist(buffer, data)
 			while (cp1 < &line[25])
 				*cp1++ = ' ';		
 			i = 26;
-			while ( (c = *cp2++)
+			while ( (c = *cp2++)!=0
 				   && ++i < term.t_ncol
 				   && cp1 < &line[125]  ) {
 				*cp1++ = c;

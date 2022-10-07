@@ -441,6 +441,8 @@ extern	char *malloc();
 
 #ifdef __STDC__
 void	mlwrite(char *fmt, ...);
+#else
+void mlwrite();
 #endif
 
 #if AtST
