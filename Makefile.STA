@@ -2,7 +2,7 @@
 
 LFLAGS= -static
 LIBS=
-CFLAGS= -O3 -DVT100 -Dlinux2
+CFLAGS= -O3 -DVT100
 OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
 
 all:	mes

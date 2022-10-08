@@ -1,7 +1,7 @@
 # Makefile for MEX on Linux glibc 2.2 icc
 
 CC=icc
-CFLAGS= -O3 -tpp5 -I/usr/include/ncurses -Dlinux2
+CFLAGS= -O3 -tpp5 -I/usr/include/ncurses
 
 LFLAGS= -s
 LIBS=   -lncurses

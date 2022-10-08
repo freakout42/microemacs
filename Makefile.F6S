@@ -1,6 +1,6 @@
 # Makefile for MEX on FreeBSD 7.0 amd64
 
-CFLAGS= -O3 -DVT100 -Dfreebsd7 -Wno-return-type -w
+CFLAGS= -O3 -DVT100 -Wno-return-type -w
 LFLAGS= -static
 LIBS=   -lcurses
 OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o \

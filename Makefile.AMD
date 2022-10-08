@@ -1,6 +1,6 @@
 # Makefile for MEX on Raspberry PI
 
-CFLAGS= -Wno-implicit-int -Wno-implicit-function-declaration -O3 -I/usr/include/ncurses -Dlinux2
+CFLAGS= -Wno-implicit-int -Wno-implicit-function-declaration -O3 -I/usr/include/ncurses
 LFLAGS= -s
 LIBS=   -lncurses
 OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
