@@ -22,7 +22,7 @@
 #define CURSES	0			/* Use CURSES                   */
 #endif
 
-#if (_WIN32)
+#if (_WIN32 | _WIN64)
 #define V7      0
 #define SYS_V   0
 #define BSD     0
@@ -431,11 +431,11 @@ extern  LINE	*lalloc();		/* Allocate a line		*/
 #define free	myfree
 #endif
 
-#ifdef SYS_V
+#if SYS_V | W32
 #include <stdlib.h>
 #endif
 
-#if (!defined(_STDLIB_H) && !defined(_STDLIB_INCLUDED) && !defined(_STDLIB_H_))
+#if (!defined(_STDLIB_H) && !defined(_STDLIB_INCLUDED) && !defined(_STDLIB_H_) && !defined(STDLIB_H) && !defined(_INC_STDLIB))
 extern	char *malloc();
 #endif
 
