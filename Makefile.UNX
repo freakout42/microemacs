@@ -1,9 +1,9 @@
 # Makefile for MEX on Unix
 
 CFLAGS=-O3 -Wall -Werror
-LIBS=-lncurses
+LIBS=-lcurses
 SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
-OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
+OBJ=buffer.o cursor.o display.o files.o line.o main.o random.o search.o term.o window.o word.o help.o
 
 mex: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
@@ -18,14 +18,10 @@ term.o: term.c ed.h
 	$(CC) $(CFLAGS) -I/usr/include/ncurses -c term.c
 
 curkeys.h: curkeys.c
-	$(CC) -E $< | sed -n 's/^YY /#define KEY_/p' >$@
-#	grep 'define[^K]*KEY_' <$(USRINC)/ncurses.h >$@
+	$(CC) -E curkeys.c | sed -n 's/^YY /#define KEY_/p' >$@
 
 help.c: help_c.eng
-	-ln -f $< $@
-
-install: mex
-	cp mex bin/me.`uname -i`
+	cp help_c.eng $@
 
 clean:
-	rm -f *.o core mex curkeys.h help.c mev mes me
+	rm -f *.o core mex curkeys.h help.c

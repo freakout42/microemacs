@@ -232,6 +232,9 @@ term.t_nrow = csbi.srWindow.Bottom - csbi.srWindow.Top;
 	tcgetattr (fileno(stdin), &t);
 	t.c_cc[VINTR] = 0;
 	t.c_cc[VSUSP] = 0;
+#ifdef VDSUSP
+  t.c_cc[VDSUSP] = 0;
+#endif
 #ifdef VLNEXT
   t.c_cc[VLNEXT] = 0;
 #endif

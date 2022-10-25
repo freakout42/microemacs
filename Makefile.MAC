@@ -22,7 +22,7 @@ curkeys.h:
 	grep 'define[^K]*KEY_' <$(USRINC)/ncurses.h >$@
 
 help.c: help_c.eng
-	-ln -f $< $@
+	cp $< $@
 
 clean:
 	rm -f *.o core mex help.c

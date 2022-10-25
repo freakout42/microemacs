@@ -1,13 +1,13 @@
-You are looking at the GNOME tutorial.  Comments on this document
+You are looking at the mex tutorial.  Comments on this document
 may be refered to Moshe Braner <braner@tcgould.tn.cornell.edu>.
 
-GNOME is a text editor based on the original "microEMACS" by Dave Conroy.
-The name "GNOME" (Generally Not the Original Micro Emacs) is meant to
+mex is a text editor based on the original "microEMACS" by Dave Conroy.
+The name "mex" (Generally Not the Original Micro Emacs) is meant to
 distinguish this version from the numerous other versions of "microEMACS"
 that exist now, and to comply with Richard Stallman's request that the
 name "EMACS" be reserved for his original full-screen editor.
 
-I use GNOME daily for all of my work, including program editing, some data
+I use mex daily for all of my work, including program editing, some data
 files, shell scripts, letters, and word processing (in combination with
 YAFIYGI ("you asked for it you got it") style typesetting software, such as
 TeX or troff).  Its strongest advantage is that I can use it on every
@@ -20,7 +20,7 @@ completely reside in RAM, but the editor can use all available RAM.
 [Press Control-V to see the next screen]
 
 
-The philosophy behind GNOME is:
+The philosophy behind mex is:
 
 	- keep it SMALL (easy on system resources) and SIMPLE (easy
 		on the user).
@@ -91,7 +91,7 @@ The nice features of my version include:
 And so on.
 
 
-GNOME commands generally involve the CONTROL key (sometimes labelled CTRL or 
+mex commands generally involve the CONTROL key (sometimes labelled CTRL or 
 CTL) or the META key (generally labelled ESCAPE).  Rather than write out META 
 or CONTROL each time we want you to prefix a character, we'll use the following
 abbreviations:
@@ -140,7 +140,7 @@ Getting from screenful to screenful is useful, but how do you reposition
 yourself within a given screen to a specific place?  There are several ways 
 you can do this.  One way (not the best, but the most basic) is to use the 
 commands previous, backward, forward and next.  As you can imagine these 
-commands (which are given to GNOME as ^P, ^B, ^F, and ^N  respectively) move 
+commands (which are given to mex as ^P, ^B, ^F, and ^N  respectively) move 
 the cursor from where it currently is to a new place in the given direction.  
 Here, in a more graphical form are the commands:
  
@@ -166,7 +166,7 @@ the time so it would be of great benefit if you learn them now.
 
 On Unix, lines are separated by a single Linefeed character, which is what
 Unix calls a Newline.  On MS-DOS lines are separated by a CR-LF pair.  On
-either system, GNOME will correctly read in either kind of file, and, if
+either system, mex will correctly read in either kind of file, and, if
 asked to write the file, write it with the line separators standard on that
 system.
 
@@ -208,7 +208,7 @@ The location of the cursor within the text is also called "point".  To
 paraphrase, the cursor shows on the screen where point is located in
 the text.
 
-Like most other commands in GNOME, these commands can be given
+Like most other commands in mex, these commands can be given
 arguments which cause them to be executed repeatedly.  The way you
 give a command a repeat count is by typing META and then the digits
 before you type the command.  (Remember META is usually called ESCAPE)
@@ -228,7 +228,7 @@ screenfuls.  As a special case, typing just ^U is equivalent to <Esc> 4.
 QUITTING FROM COMMANDS
 ----------------------
 
-The character in GNOME used to quit out of all commands which request
+The character in mex used to quit out of all commands which request
 input is ^G.  For example, you can use ^G to discard a numeric argument
 or the beginning of a command that you don't want to finish.
 (You can also use the F2 key on IBM-PC compatibles, and the UNDO key
@@ -245,7 +245,7 @@ INSERTING AND DELETING
 ----------------------
 
 If you want to type text, just do it.  Characters which you can see, such 
-as A, 7, *, etc. are taken by GNOME as text and are immediately inserted.  
+as A, 7, *, etc. are taken by mex as text and are immediately inserted.  
 Type <Return> (the carriage-return key) to insert a line separator.
 
 You can delete the last character you typed by typing ^H.  On some
@@ -262,12 +262,12 @@ cursor position.  A ^D has the same effect.
 >> Now start typing text until you reach the right margin, and keep
    typing.  When a line of text gets too big for one line on the
    screen, the line of text is "continued" off the edge of the screen.
-   GNOME scrolls the screen over so you can see what you are editing.
+   mex scrolls the screen over so you can see what you are editing.
    The '$' at the left or right edge of the screen indicates 
    that the current line extends off in that direction.  
 
 >> The following line actually goes off the edge.  Trying typing enough ^F's
-   so that you move off the right hand end of this line.  This is a long line.  Note the "$"s at each edge.  Keep typing ^F's and watch where GNOME decides to scroll the line.  Now, type ^B's until GNOME decides to scroll the line again.
+   so that you move off the right hand end of this line.  This is a long line.  Note the "$"s at each edge.  Keep typing ^F's and watch where mex decides to scroll the line.  Now, type ^B's until mex decides to scroll the line again.
 
 >> Use ^D's or <Delete>s to delete the text until the text line fits on 
    one screen line again.  The continuation "$" will go away.
@@ -279,10 +279,10 @@ cursor position.  A ^D has the same effect.
 
 >> Type <Return> to insert the separator again.
 
-GNOME has an internal limit of 255 characters on line lengths.  If you try
-to surpass this limit, GNOME will give you an error message.
+mex has an internal limit of 32768 characters on line lengths.  If you try
+to surpass this limit, mex will give you an error message.
 
-Remember that most GNOME commands can be given a repeat count;  Note
+Remember that most mex commands can be given a repeat count;  Note
 that this includes characters which insert themselves.
 
 >>  Try that now -- type META 8 * and see what happens.
@@ -293,7 +293,7 @@ start of the second of the two lines and type ^O.
 >>  Try moving to a line and typing ^O now.
 
 You've now learned the most basic way of typing something in
-GNOME and correcting errors.  You can delete by words or lines
+mex and correcting errors.  You can delete by words or lines
 as well.  Here is a summary of the delete operations:
 
 	^D or <Delete>      delete the character under the cursor
@@ -308,7 +308,7 @@ Notice that <Delete> and ^D vs <Esc> <Delete> and <Esc> D extend the parallel
 started by ^F and <Esc> F.
 
 Now suppose you kill something, and then you decide that you want to get 
-it back?  Well, whenever you kill something bigger than a character, GNOME 
+it back?  Well, whenever you kill something bigger than a character, mex 
 saves it for you.  To yank it back, use ^Y.  Note that you don't have to 
 be in the same place to do ^Y; This is a good way to move text around.  
 Also note that the difference between "Killing" and "Deleting" something 
@@ -353,8 +353,8 @@ FILES
 -----
 
 In order to make the text you edit permanent, you must put it in a file.
-Otherwise, it will go away when you leave GNOME.  While you are editing a
-file in GNOME, your changes are actually being made to a private "scratch"
+Otherwise, it will go away when you leave mex.  While you are editing a
+file in mex, your changes are actually being made to a private "scratch"
 copy of the file, a copy that resides in your computer's short-term memory.
 The changes don't become permanent until you "save" the file.  This is so
 you can have control to avoid leaving a half-changed file around when you
@@ -363,10 +363,10 @@ don't want to.
 If you look near the botton of the screen you will see a line that
 looks like this:
 
-+* GNOME -- ESC-? for help -- gnome.tut -- File: gnome.tut ------------------
++* mex -- ESC-? for help -- mex.tut -- File: mex.tut ------------------
 
-Note that GNOME indicates the name of the file you are currently editing.
-This is the name of your own temporary copy of the text of the GNOME
+Note that mex indicates the name of the file you are currently editing.
+This is the name of your own temporary copy of the text of the mex
 tutorial; the file you are now editing.  Whatever file you edit, that
 file's name will appear in that precise spot.
 
@@ -384,9 +384,9 @@ type the command
 
      ^X ^V   Visit a file
 
-GNOME will ask you for the file name.  GNOME tries to guess what name
+mex will ask you for the file name.  mex tries to guess what name
 you might want, and displays it on the screen.  You can edit it with ^F,
-^B, ^H, ^D, ^K, and so on.  If GNOME can think of several possible
+^B, ^H, ^D, ^K, and so on.  If mex can think of several possible
 names, it will supply them all.  Only one is displayed at any one time,
 but you can scroll through them with ^N and ^P.  You should end the name
 with the Return key.  After this command, you will see the contents of the
@@ -399,20 +399,20 @@ A new version of the file, with the same name, will be created.  The old
 version is overwritten, and thus destroyed.  If you want to save the
 changed version as a new file, keeping the old version, you must either
 make a back-up copy of the old file before you save the new one, or write
-the new version out from GNOME with a new name.  Issue the command:
+the new version out from mex with a new name.  Issue the command:
 
      ^X ^W   Write the file
 
-and GNOME will ask you for the new file name.
+and mex will ask you for the new file name.
 
 If you forget to save, edit a different file, and then decide to quit,
-GNOME will remind you that you made changes that have not been saved and
+mex will remind you that you made changes that have not been saved and
 then ask you whether you want to discard them.  (If you don't save them,
 they will be thrown away.  That might be what you want!)  You should
 answer with a "N" to save them or a "Y" to throw the changes away.
 
 To make a new file, just edit it "as if" it already existed.  Then start 
-typing in the text.  When you ask to "save" the file, GNOME will really 
+typing in the text.  When you ask to "save" the file, mex will really 
 create the file with the text that you have inserted.  From then on, you 
 can consider yourself to be editing an already existing file.
 
@@ -439,7 +439,7 @@ right one, then press <Return>.
 SEARCHING
 ---------
 
-GNOME can do searches for strings (these are groups of contiguous
+mex can do searches for strings (these are groups of contiguous
 characters or words) either forward through the file or backward
 through it.  
 
@@ -453,23 +453,23 @@ through it.
 MACROS
 ------
 
-GNOME has a simple but effective facility for automating typing tasks
-through the definition of "macros".  A macro in GNOME is simply a
-collection of keystrokes (which may include text and other GNOME
+mex has a simple but effective facility for automating typing tasks
+through the definition of "macros".  A macro in mex is simply a
+collection of keystrokes (which may include text and other mex
 commands).  This collection may be replayed by issuing the "execute
-macro" command, ^X E.  To define a macro, type ^X M.  GNOME will continue
+macro" command, ^X E.  To define a macro, type ^X M.  mex will continue
 normal operation,  but all keystrokes will be recorded in the macro.  When
-done, type ^X M again.  GNOME prints a message on the bottom line saying
+done, type ^X M again.  mex prints a message on the bottom line saying
 "[start macro]" or "[end macro]", so you'll know what it's doing.
 Only one macro can be defined at any one time, and macros cannot be saved
-on disk nor edited.  (This is an area where GNOME could use some
+on disk nor edited.  (This is an area where mex could use some
 enhancement).
 
 
 TEXT REPLACEMENT
 ----------------
 
-There is no command in GNOME for "search-and-replace".  Instead, this
+There is no command in mex for "search-and-replace".  Instead, this
 can easily be done via a simple macro definition.
 
 >> Type <Esc> S changed <Return>.  Then type ^X M to start a macro definition.
@@ -493,8 +493,8 @@ MODE LINE
 ---------
 
 The bottom line of the screen is known as the communications line.  This
-is where GNOME interactively communicates with you.  You have already
-seen how GNOME prompts you for information (like when searching).  GNOME
+is where mex interactively communicates with you.  You have already
+seen how mex prompts you for information (like when searching).  mex
 can also report things to you as well.
 
 >> Type ^X = and see what you get in the communications line.
@@ -502,7 +502,7 @@ can also report things to you as well.
 The line immediately above the communications line is called the MODE
 LINE. The mode line says something like
 
-+* GNOME -- ESC-? for help -- gnome.tut -- File: gnome.tut ------------------
++* mex -- ESC-? for help -- mex.tut -- File: mex.tut ------------------
 
 This is a very useful "information" line.
 
@@ -513,7 +513,7 @@ mistake, nor can you save it.
 The star (*) means that you have made changes to the text.  Right after
 you read in or save a file, there is no star.
 
-The buffer name is the name GNOME gave to the buffer, and it is usually
+The buffer name is the name mex gave to the buffer, and it is usually
 related to the filename. You already know what the filename means -- it
 is the name used by the operating system to identify the file you have
 edited, when stored on disk.
@@ -523,7 +523,7 @@ WORD WRAP
 ---------
 
 A mode which is very useful, especially for editing English text, is "wrap"
-(or "fill") mode.  When this mode is on, GNOME breaks the line in between
+(or "fill") mode.  When this mode is on, mex breaks the line in between
 words automatically whenever the line gets too long.  You can turn this
 mode on by typing (for example) <Esc> 65 ^X R.  This means: set the right
 margin to 65 columns from the left end of the screen.  When the mode is on,
@@ -542,14 +542,14 @@ GETTING MORE HELP
 -----------------
 
 In this tutorial we have tried to supply just enough information to
-get you started using GNOME.  There is so much available in GNOME that
+get you started using mex.  There is so much available in mex that
 it would be impossible to explain it all here.  However, you may want
-to learn more about GNOME since it has numerous desirable features
+to learn more about mex since it has numerous desirable features
 that you don't know about yet.
 
 The on-line help feature is brief but complete.  Type <Esc> ?  (or <Esc>
 <Esc>).  There are also options available through the command-line that
-launches GNOME from your operating system.  Type "gnome -h" (at the
+launches mex from your operating system.  Type "mex -h" (at the
 operating system prompt) for a list.
 
 >> Type <Esc> ? right now.  Press ^G to return to full-screen editing.
@@ -563,15 +563,15 @@ Remember, to exit use ^C.
 This tutorial is meant to be understandable to all new users, so if
 you found something unclear, don't sit and blame yourself - complain!
 
-You'll probably find that if you use GNOME for a few days you won't be able
+You'll probably find that if you use mex for a few days you won't be able
 to give it up.  Initially it may give you trouble.  But remember that this
-is the case with any editor, especially one that is as versatile as GNOME.
+is the case with any editor, especially one that is as versatile as mex.
 
 
 Acknowledgements
 ----------------
 
-GNOME was made possible by the placement in the public domain of the
+mex was made possible by the placement in the public domain of the
 source code for "microEMACS" by Dave Conroy.
 
 This is a modified version of the "microEMACS Tutorial" by Dan Lawrance and
@@ -580,3 +580,4 @@ Tutorial" by Jonathan Payne, which in turn was based on the tutorial
 "Teach-Emacs" from MIT as modified by Steve Zimmerman.
 
 This document was last updated on 880311 by Moshe Braner.
+This document was last updated on 221024 by Axel Reinhold.
