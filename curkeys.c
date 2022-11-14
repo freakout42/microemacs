@@ -1,5 +1,11 @@
+#include <stdio.h>
 #include <curses.h>
-#define defkey(keyname) YY keyname KEY_##keyname
+
+#define defke3(keyname, keyvalue) printf("#define KEY_%s %s\n", keyname, #keyvalue);
+#define defke2(keyname, keyvalue) defke3(keyname, keyvalue)
+#define defkey(keyname)           defke2(#keyname, KEY_##keyname)
+
+int main() {
 defkey(BACKSPACE)
 defkey(NEXT)
 defkey(UP)
@@ -14,4 +20,6 @@ defkey(HOME)
 defkey(IC)
 defkey(DC)
 defkey(F0)
-YY F(n) (KEY_F0+(n))
+defkey(F(n))
+return 0;
+}

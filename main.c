@@ -1,4 +1,4 @@
-/*
+/* main.c
  * Original code written by Dave G. Conroy,
  * substantially modified by Moshe Braner, July-December 1986.
  * Further substantial modifications by MB: January and April, 1988.
@@ -56,7 +56,7 @@ void edmore(char fname[]);
 #define DASTART	990		/* starting the DA	*/
 #define DACLOSE	991		/* closing the DA	*/
 
-char	*rcsid = "$Id: main.c,v 1.35 2022/10/06 05:45:54 axel Exp $";
+char	*rcsid = "$Id: main.c,v 1.37 2022/11/14 13:42:00 axel Exp $";
 int	logit = LOGIT;			/* mb: log keystrokes		*/
 int	playback = FALSE;		/* mb: playback from log file	*/
 #if ST_DA
@@ -617,6 +617,7 @@ void edinit(fname)
 int
 execute(c, f, n)
 	register int	c;
+  int f, n;
 {
 	register KEYTAB *ktp;
 	register int	k;
@@ -1465,6 +1466,7 @@ nolog:
  */
 int
 doplay(f,n)
+	int f, n;
 {
 	register int c, s;
 	char buf[80];
@@ -1493,6 +1495,7 @@ doplay(f,n)
  */
 int
 quickexit(f,n)
+	int f, n;
 {
 	if ((curbp->b_flag&BFCHG) != 0		/* Changed.		*/
 	&& (curbp->b_flag&BFTEMP) == 0)		/* Real.		*/
@@ -1509,6 +1512,7 @@ quickexit(f,n)
  */
 int
 quit(f, n)
+	int f, n;
 {
 	register int	s;
 #if ST_DA
@@ -1545,7 +1549,9 @@ quit(f, n)
 
 /* mb: added */
 int
-emacs_quit(f, n) {
+emacs_quit(f, n)
+	int f, n;
+{
 	if (f)
 		return(quickexit(FALSE, 1));
 	else
@@ -1560,6 +1566,7 @@ emacs_quit(f, n) {
  */
 int
 ctlxlp(f, n)
+	int f, n;
 {
 	if (kbdmip!=NULL || kbdmop!=NULL) {
 		mlwrite("Not now");
@@ -1578,6 +1585,7 @@ ctlxlp(f, n)
  */
 int
 ctlxrp(f, n)
+	int f, n;
 {
 	if (kbdmip == NULL) {
 		mlwrite("Not now");
@@ -1593,6 +1601,7 @@ ctlxrp(f, n)
  */
 int
 defmacro(f, n)
+	int f, n;
 {
 	if (kbdmip == NULL)
 		return (ctlxlp(f, n));
@@ -1610,6 +1619,7 @@ defmacro(f, n)
  */
 int
 ctlxe(f, n)
+	int f, n;
 {
 	register int	c;
 	register int	af;

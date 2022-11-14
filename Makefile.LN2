@@ -18,8 +18,9 @@ term.o: term.c ed.h
 	$(CC) $(CFLAGS) -I/usr/include/ncurses -c term.c
 
 curkeys.h: curkeys.c
-	$(CC) -E $< | sed -n 's/^YY /#define KEY_/p' >$@
-#	grep 'define[^K]*KEY_' <$(USRINC)/ncurses.h >$@
+	$(CC) -I/usr/include/ncurses curkeys.c -o curkey2
+	./curkey2 >$@
+	rm curkey2
 
 help.c: help_c.eng
 	-ln -f $< $@
