@@ -1,4 +1,5 @@
 @echo off
+rem dosbox mount c m:\p\; c:; cd mex; m.bat
 set OLDPATH=%PATH%
 set PATH=..\tc\bin;%PATH%
 del *.obj

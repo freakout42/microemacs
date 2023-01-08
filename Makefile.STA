@@ -1,58 +1,16 @@
 # Makefile for MEX on Linux static
 
-LFLAGS= -static
+CFLAGS= -Os -Wall -Wno-error -DVT100
+LDFLAGS= -static
 LIBS=
-CFLAGS= -O3 -DVT100
-OBJ=	buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
-
-all:	mes
+SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
+OBJ=buffer.o cursor.o display.o files.o line.o main.o random.o search.o term.o window.o word.o
 
 mes: $(OBJ)
-	$(CC) -o $@ $(LFLAGS) $(OBJ) $(LIBS)
+	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
 	strip mes
 
-buffer.o: buffer.c ed.h
-	$(CC) $(CFLAGS) -c buffer.c
-
-cursor.o: cursor.c ed.h
-	$(CC) $(CFLAGS) -c cursor.c
-
-display.o: display.c ed.h
-	$(CC) $(CFLAGS) -c display.c
-
-files.o: files.c ed.h
-	$(CC) $(CFLAGS) -c files.c
-
-help.o: help.c ed.h
-	$(CC) $(CFLAGS) -c help.c
-
-line.o: line.c ed.h
-	$(CC) $(CFLAGS) -c line.c
-
-main.o: main.c ed.h
-	$(CC) $(CFLAGS) -c main.c
-
-random.o: random.c ed.h
-	$(CC) $(CFLAGS) -c random.c
-
-search.o: search.c ed.h
-	$(CC) $(CFLAGS) -c search.c
-
-term.o: term.c ed.h
-	$(CC) $(CFLAGS) -c term.c
-
-window.o: window.c ed.h
-	$(CC) $(CFLAGS) -c window.c
-
-word.o: word.c ed.h
-	$(CC) $(CFLAGS) -c word.c
-
-help.c: help_c.eng
-	-ln -f $? $@
-
-install: mes
-	strip mes
-	cp mes bin/me.static
+$(SRC):	ed.h
 
 clean:
 	rm -f *.o core mes curkeys.h help.c
