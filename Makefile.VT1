@@ -4,14 +4,17 @@ CC=diet cc
 CFLAGS=-Os -DVT100
 LDFLAGS=-static
 LIBS=
-SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
-OBJ=buffer.o cursor.o display.o files.o line.o main.o random.o search.o term.o window.o word.o
+SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c help.c
+OBJ=buffer.o cursor.o display.o files.o line.o main.o random.o search.o term.o window.o word.o help.o
 
 mev: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
 	strip $@
 
 $(SRC):	ed.h
+
+help.c: help_c.eng
+	cp help_c.eng $@
 
 clean:
 	rm -f *.o core mex curkeys.h help.c mev mes me
