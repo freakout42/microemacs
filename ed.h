@@ -425,6 +425,7 @@ extern  TERM	term;    		/* Terminal information.	*/
 extern  BUFFER	*bfind();		/* Lookup a buffer by name	*/
 extern  WINDOW	*wpopup();		/* Pop up window creation	*/
 extern  LINE	*lalloc();		/* Allocate a line		*/
+extern  int	fbwdel();  /* forward word delete */
 
 #if ST_DA				/* mb: use our own malloc scheme */
 #define malloc	mylloc

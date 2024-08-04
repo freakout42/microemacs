@@ -200,14 +200,12 @@ extern  int	renambuf();
 extern  int	page_nextw();
 extern  int	back_nextw();
 extern  int	flush_kbuf();
-extern  int	getkey();		/* fwd ref */
 extern  int	doplay();		/* fwd ref */
 extern  int	emacs_quit();		/* fwd ref */
 extern  int	ctrlg();		/* fwd ref */
 extern  int	undo();			/* fwd ref */
 extern  int	bkill();		/* fwd ref */
 extern  int	fbdel();		/* fwd ref */
-extern  int	fbwdel();		/* fwd ref */
 extern  int	togdeldir();		/* fwd ref */
 extern  int	defmacro();		/* fwd ref */
 
