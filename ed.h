@@ -8,7 +8,7 @@
  * which were changed to char.
  * um: for UN*X System V set the defines V7 ``and'' SYS_V to 1 !!
  */
-#define VERSION "5.9"
+#define VERSION "6.0"
 
 #if (VT100)
 #define V7      1			/* V7 UN*X or Coherent          */
@@ -409,6 +409,7 @@ extern  int	lastflag;		/* Flags, last command		*/
 extern  int	curgoal; 		/* Goal for C-P, C-N		*/
 extern  int	mpresf;  		/* Stuff in message line	*/
 extern  int	sgarbf;  		/* State of screen unknown      */
+extern  WINDOW	*windw1; 		/* Main window      */
 extern  WINDOW	*curwp;  		/* Current window		*/
 extern  BUFFER	*curbp;  		/* Current buffer		*/
 extern  BUFFER	*oldbp;  		/* mb: previous buffer          */
@@ -478,7 +479,7 @@ int getkey();
 int make_popup(BUFFER *buffer, int (*prepare)(), char *data[]);
 int addline(char *text, BUFFER *bp);
 void dtmpbufs();
-void vttidy();
+int vttidy();
 int anycb();
 void flushlog(int flag);
 int putlog(int c);

@@ -123,13 +123,13 @@ void movecursor(row, col)
  * written in the line). Shut down the channel
  * to the terminal.
  */
-void vttidy()
+int vttidy()
 {
 	movecursor(term.t_nrow, 0);
 #ifndef MSDOS
 /*	(*term.t_putchar)('\n');	/ * mb: scroll! */
 #endif
-	(*term.t_close)();
+	return (*term.t_close)();
 }
 
 /*

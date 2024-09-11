@@ -21,6 +21,7 @@
  * keyboard processing code, for the
  * MicroEMACS screen editor.
  */
+#include	<setjmp.h>
 #include	<stdio.h>
 #include	<string.h>
 #include	"ed.h"
@@ -57,6 +58,7 @@ void edmore(char fname[]);
 #define DACLOSE	991		/* closing the DA	*/
 
 char	*rcsid = "$Id: main.c,v 1.41 2024/05/22 17:56:04 axel Exp $";
+jmp_buf loop1;
 int	logit = LOGIT;			/* mb: log keystrokes		*/
 int	playback = FALSE;		/* mb: playback from log file	*/
 #if ST_DA
@@ -807,140 +809,23 @@ escseq(c)
 }
 #endif
 
-#if MSDOS
-int _main(argc, argv)
-#else
-int main(argc, argv)
-#endif
-	int	argc;
-	char	*argv[];
-{
-	register int	c=0;
-	register int	f;
-	register int	n;
-	register int	state;
+void mainloop(char *buf, WINDOW *scr) {
+	int	c=0;
+	int	f, n, r;
 	int	negarg;
-	int	gline = 1;
-	int	visitmode = FALSE;
-	char	*cp;
-#if MSDOS
-	directvideo = TRUE;
-	_fmode = O_BINARY;
-#endif
-	nfiles = 0;
-#if ST_DA
-	maxnfiles = NFILES;
-#else
-	maxnfiles = argc + NFILES;
-	if ((clfn = (char **) malloc (maxnfiles * sizeof(char *))) == NULL)
-#if BFILES
-		_exit (1);
-#else
-		exit (1);
-#endif
-	while(--argc > 0 && ++argv != NULL) {
-		cp = *argv;
-		if(*cp == '-') {	/* cmd line parameter */
-			f = *(++cp);
-			if (f >= 'a' && f <= 'z')
-				f += ('A' - 'a');
-			if (f && cp[1]=='\0'	/* space before number   */
-			 && argc > 1 && argv[1] != NULL
-			 && (c=argv[1][0])>='0' && c<='9') {
-				if (f=='C' || f=='F' || f=='G'
-				 || f=='R' || f=='T') {
-					--argc;
-					++argv;
-					cp = (*argv) - 1;
-				}
-			}
-			n = 0;
-			while (f && (c=(*(++cp)))>='0' && c<='9')
-				n = 10*n + (c-'0');
-			if (f == 'C')
-				term.t_ncol = n;
-			else if (f == 'F') {
-				if (c == '-') {
-					lmargin = n;
-					n = 0;
-					while (f &&
-						(c=(*(++cp)))>='0' && c<='9')
-							n = 10*n + (c-'0');
-				}
-				fillcol = n;
-				if (lmargin + tabsize > fillcol)
-					lmargin = fillcol = 0;
-			}
-#if MSDOS
-			else if (f == 'D')
-				directvideo = FALSE;
-#endif
-			else if (f == 'G')
-				gline = n;
-#if (AtST | MSDOS)
-			else if (f == 'I')
-				vidrev = TRUE;
-#endif
-#if CANLOG
-			else if (f == 'L')
-				logit = (!logit);
-			else if (f == 'P')
-				playback = TRUE;
-#endif
-#if MSDOS
-			else if (f == 'M') {
-				if ((n>=0 && n<=3) || n==7)
-					vidmode = n;
-			}
-#endif
-			else if (f == 'R')
-				term.t_nrow = n-1;
-			else if (f == 'T')
-				tabsize = n;
-			else if (f == 'V')
-				visitmode = TRUE;
-			else
-				usage();
-		} else {			/* a filename	*/
-			clfn[nfiles++] = cp;
-#if (AtST | MSDOS | CPM | W32)
-			cpyfname (cp, cp);	/* tolower	*/
-#endif
-		}
-	}
-#endif
-#if AtST
-	if (Getrez() == 0) {
-		if (term.t_ncol > 40)
-			term.t_ncol = 40;
-	}
-#endif
-#if MSDOS
-	if (vidmode==0 || vidmode==1) {
-		if (term.t_ncol > 40)
-			term.t_ncol = 40;
-	}
-#endif
-	vtinit();
-	if (nfiles) {
-		cp = clfn[0];
-		edinit(cp);
-		cpyfname (curbp->b_fname, cp);
-		update(TRUE);
-		if (readin(cp) == FIOFNF)
-			mlwrite("[New file]");
-		if (visitmode) {
-			curbp->b_flag &= (~BFEDIT);
-			logit = FALSE;
-		}
-		for (fileindex = 1; fileindex<nfiles; fileindex++) {
-			edmore(clfn[fileindex]);
-		}
-	} else {				/* no filename given */
-		edinit("main");
-		fileindex = 0;
-	}
-	gotolinum(TRUE,gline);
+	int	state;
+
+  if (scr) {
+    windw1 = scr;
+    vtinit();
+  }
+  if (buf) {
+    edinit("main");
+    fileindex = 0;
+    addline(buf, curbp);
+    curwp->w_flag |= WFMOVE|WFHARD|WFFORCE;
+  }
+
 	kbdm[0] = CTLX|')';			/* Empty macro		*/
 	lastflag = 0;				/* Fake last flags.	*/
 	f = FALSE;
@@ -961,7 +846,8 @@ int main(argc, argv)
 	state = BASE;
 #endif
 
-	for(;;) {				/* main loop */
+  r = setjmp(loop1);
+	if (r == 0) for(;;) {				/* main loop */
 
 	while (c == NOKEY) {	/* mb: happens after errors in getkey() */
 		update(FALSE);
@@ -1282,7 +1168,154 @@ daloop:
 
 	}					/* end of for()  */
 
-}						/* end of main() */
+}						/* end of mainloop() */
+
+#ifndef EMBEDDED
+#if MSDOS
+int _main(argc, argv)
+#else
+int main(argc, argv)
+#endif
+	int	argc;
+	char	*argv[];
+{
+	register int	c=0;
+	register int	f;
+	register int	n;
+	int	gline = 1;
+	int	visitmode = FALSE;
+	char	*cp;
+  char *b = "hhh123";
+
+if (argc==2 && !strcmp(argv[1], "-e")) {
+	vtinit();
+	mainloop(b, windw1);
+	vttidy();
+	return 0;
+} else {
+#if MSDOS
+	directvideo = TRUE;
+	_fmode = O_BINARY;
+#endif
+	nfiles = 0;
+#if ST_DA
+	maxnfiles = NFILES;
+#else
+	maxnfiles = argc + NFILES;
+	if ((clfn = (char **) malloc (maxnfiles * sizeof(char *))) == NULL)
+#if BFILES
+		_exit (1);
+#else
+		exit (1);
+#endif
+	while(--argc > 0 && ++argv != NULL) {
+		cp = *argv;
+		if(*cp == '-') {	/* cmd line parameter */
+			f = *(++cp);
+			if (f >= 'a' && f <= 'z')
+				f += ('A' - 'a');
+			if (f && cp[1]=='\0'	/* space before number   */
+			 && argc > 1 && argv[1] != NULL
+			 && (c=argv[1][0])>='0' && c<='9') {
+				if (f=='C' || f=='F' || f=='G'
+				 || f=='R' || f=='T') {
+					--argc;
+					++argv;
+					cp = (*argv) - 1;
+				}
+			}
+			n = 0;
+			while (f && (c=(*(++cp)))>='0' && c<='9')
+				n = 10*n + (c-'0');
+			if (f == 'C')
+				term.t_ncol = n;
+			else if (f == 'F') {
+				if (c == '-') {
+					lmargin = n;
+					n = 0;
+					while (f &&
+						(c=(*(++cp)))>='0' && c<='9')
+							n = 10*n + (c-'0');
+				}
+				fillcol = n;
+				if (lmargin + tabsize > fillcol)
+					lmargin = fillcol = 0;
+			}
+#if MSDOS
+			else if (f == 'D')
+				directvideo = FALSE;
+#endif
+			else if (f == 'G')
+				gline = n;
+#if (AtST | MSDOS)
+			else if (f == 'I')
+				vidrev = TRUE;
+#endif
+#if CANLOG
+			else if (f == 'L')
+				logit = (!logit);
+			else if (f == 'P')
+				playback = TRUE;
+#endif
+#if MSDOS
+			else if (f == 'M') {
+				if ((n>=0 && n<=3) || n==7)
+					vidmode = n;
+			}
+#endif
+			else if (f == 'R')
+				term.t_nrow = n-1;
+			else if (f == 'T')
+				tabsize = n;
+			else if (f == 'V')
+				visitmode = TRUE;
+			else
+				usage();
+		} else {			/* a filename	*/
+			clfn[nfiles++] = cp;
+#if (AtST | MSDOS | CPM | W32)
+			cpyfname (cp, cp);	/* tolower	*/
+#endif
+		}
+	}
+#endif
+#if AtST
+	if (Getrez() == 0) {
+		if (term.t_ncol > 40)
+			term.t_ncol = 40;
+	}
+#endif
+#if MSDOS
+	if (vidmode==0 || vidmode==1) {
+		if (term.t_ncol > 40)
+			term.t_ncol = 40;
+	}
+#endif
+	vtinit();
+	if (nfiles) {
+		cp = clfn[0];
+		edinit(cp);
+		cpyfname (curbp->b_fname, cp);
+		update(TRUE);
+		if (readin(cp) == FIOFNF)
+			mlwrite("[New file]");
+		if (visitmode) {
+			curbp->b_flag &= (~BFEDIT);
+			logit = FALSE;
+		}
+		for (fileindex = 1; fileindex<nfiles; fileindex++) {
+			edmore(clfn[fileindex]);
+		}
+	} else {				/* no filename given */
+		edinit("main");
+		fileindex = 0;
+	}
+	gotolinum(TRUE,gline);
+  mainloop(NULL, NULL);
+}
+return 0;
+}
+#endif
 
 #ifdef register
 #undef register
@@ -1324,9 +1357,11 @@ edmore(fname)
  */
 int
 getkey() {
-	register int c, ub, lb=0;
+	register int c;
 
 #if CANLOG
+	register int ub, lb=0;
+
 	if (playback == TRUE) {
 		if (ropenlog() == ABORT) {
 			playback = ABORT;
@@ -1357,9 +1392,9 @@ getkey() {
 		mlwrite("Unable to open log file");
 		return (NOKEY);
 	}
-#endif
 
 logok:
+#endif
 
 	c = (*term.t_getchar)();
 #ifdef CNTLCH
@@ -1453,8 +1488,8 @@ logok:
 		return (NOKEY);
 	}
 	flushlog(FALSE);		/* flushes only when full */
-#endif
 nolog:
+#endif
 	return (c);
 }
 
@@ -1530,7 +1565,7 @@ quit(f, n)
 			closelogf();
 		}
 #endif
-		vttidy();
+		if (vttidy())
 #if ST_DA
 		return (DACLOSE);
 #else
@@ -1540,6 +1575,7 @@ quit(f, n)
 		exit(GOOD);
 #endif
 #endif
+		else longjmp(loop1, 1);
 	}
 	mlwrite("[aborted]");
 	return (s);
