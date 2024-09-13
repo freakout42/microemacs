@@ -1220,13 +1220,13 @@ int tcurbeep()
 
 int tcurhglt()
 {
-	standout();
+	wstandout(windw1);
 	return 0;
 }
 
 int tcurnrml()
 {
-	standend();
+	wstandend(windw1);
 	return 0;
 }
 

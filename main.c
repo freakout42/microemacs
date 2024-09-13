@@ -57,8 +57,9 @@ void edmore(char fname[]);
 #define DASTART	990		/* starting the DA	*/
 #define DACLOSE	991		/* closing the DA	*/
 
-char	*rcsid = "$Id: main.c,v 1.42 2024/09/11 07:38:50 axel Exp $";
+char	*rcsid = "$Id: main.c,v 1.41 2024/05/22 17:56:04 axel Exp $";
 jmp_buf loop1;
+int changedandstored;
 int	logit = LOGIT;			/* mb: log keystrokes		*/
 int	playback = FALSE;		/* mb: playback from log file	*/
 #if ST_DA
@@ -222,7 +223,11 @@ KEYTAB  keytab[] = {
 	CNTL|'@',		setmark,
 	CNTL|'A',		gotobol,
 	CNTL|'B',		backchar,
+#ifndef EMBEDDED
 	CNTL|'C',		quit,		/* mb: was C-X C-C */
+#else
+	CNTL|'Y',		quit,		/* mb: was C-X C-C */
+#endif
 	0x163,			quit,		/* CentOS5.2 */
      ED|CNTL|'D',		forwdel,
 	CNTL|'E',		gotoeol,
@@ -251,9 +256,14 @@ KEYTAB  keytab[] = {
      ED|CNTL|'T',		twiddle,
 	CNTL|'V',		forwpage,
      ED|CNTL|'W',		killregion,
+#ifndef EMBEDDED
      ED|CNTL|'Y',		yank,
+#else
+     ED|CNTL|'C',		yank,
+#endif
 	CNTL|'Z',		quickexit,	/* quick save and exit  */
 	0x197,			quickexit,	/* CentOS5.2 */
+#ifndef EMBEDDED
 	CTLX|CNTL|'B',		renambuf,	/* mb: added */
 	CTLX|CNTL|'C',		spawncli,	/* Run CLI in subjob.	*/
 	CTLX|CNTL|'D',		fortog,		/* ar: added */
@@ -267,14 +277,17 @@ KEYTAB  keytab[] = {
 #endif
 	CTLX|CNTL|'V',		filevisit,
      ED|CTLX|CNTL|'W',		filewrite,
+#endif
 	CTLX|CNTL|'X',		swapmark,
      ED|CTLX|CNTL|'Y',		unyank,		/* mb: added */
 	CTLX|CNTL|'Z',		emacs_quit,
+#ifndef EMBEDDED
 	CTLX|CNTL|0x3F,		togdeldir,	/* DELETE key dir */
 	CTLX|'?',		listbuffers,
 	CTLX|'!',		spawn,
 #if CANLOG
 	CTLX|'&',		doplay,
+#endif
 #endif
 	CTLX|'=',		showcpos,
 	CTLX|'(',		ctlxlp,
@@ -293,7 +306,9 @@ KEYTAB  keytab[] = {
 	CTLX|'P',		prevwind,
 	CTLX|'Q',		visitog,	/* mb: added */
      ED|CTLX|'R',		setfillcol,
+#ifndef EMBEDDED
      ED|CTLX|'S',		filesave,	/* mb: instead of ^X^S  */
+#endif
      ED|CTLX|'T',		ltwiddle,	/* mb: added */
 	CTLX|'V',		page_nextw,	/* mb: added */
 	CTLX|'Z',		back_nextw,	/* mb: added */
@@ -809,21 +824,30 @@ escseq(c)
 }
 #endif
 
-void mainloop(char *buf, WINDOW *scr) {
+int mainloop(char *fil, WINDOW *scr) {
 	int	c=0;
 	int	f, n, r;
 	int	negarg;
 	int	state;
 
+  changedandstored = 0;
   if (scr) {
     windw1 = scr;
     vtinit();
   }
-  if (buf) {
+  if (fil) {
     edinit("main");
-    fileindex = 0;
-    addline(buf, curbp);
-    curwp->w_flag |= WFMOVE|WFHARD|WFFORCE;
+		cpyfname (curbp->b_fname, fil);
+		update(TRUE);
+		if (readin(fil) == FIOFNF) {
+      free(curbp);
+      free(curwp);
+      vttidy();
+      return 0;
+    }
+    fileindex = 1;
+//    addline(fil, curbp);
+//    curwp->w_flag |= WFMOVE|WFHARD|WFFORCE;
   }
 
 	kbdm[0] = CTLX|')';			/* Empty macro		*/
@@ -1167,7 +1191,7 @@ daloop:
 	}					/* end of switch */
 
 	}					/* end of for()  */
-
+return changedandstored;
 }						/* end of mainloop() */
 
 #ifndef EMBEDDED
@@ -1185,11 +1209,13 @@ int main(argc, argv)
 	int	gline = 1;
 	int	visitmode = FALSE;
 	char	*cp;
-  char *b = "hhh123";
 
-if (argc==2 && !strcmp(argv[1], "-e")) {
+if (argc==3 && !strcmp(argv[1], "-e")) {
+#if CANLOG
+	logit = FALSE;
+#endif
 	vtinit();
-	mainloop(b, windw1);
+	mainloop(argv[2], windw1);
 	vttidy();
 	return 0;
 } else {
@@ -1458,7 +1484,7 @@ logok:
 		case KEY_F(5):			/* F5 search forward */
 					c = (CNTL | 'S');		break;
 		case KEY_F(6):			/* F6 search backward */
-					c = (CNTL | 'R');		break;
+					c = (META | 'R');		break;
 		case KEY_F(7):			/* F7 search bracket */
 					c = (META | '{'); 		break;
 		case KEY_F(8):			/* F8 save/exit */
@@ -1531,9 +1557,11 @@ quickexit(f,n)
 	int f, n;
 {
 	if ((curbp->b_flag&BFCHG) != 0		/* Changed.		*/
-	&& (curbp->b_flag&BFTEMP) == 0)		/* Real.		*/
+	&& (curbp->b_flag&BFTEMP) == 0)	{ /* Real.		*/
 		if (filesave(f, n) != TRUE)
 			return (FALSE);
+    else changedandstored = 1;
+  }
 	return (quit(f, n));			/* conditionally quit	*/
 }
 
@@ -1575,7 +1603,11 @@ quit(f, n)
 		exit(GOOD);
 #endif
 #endif
-		else longjmp(loop1, 1);
+		else {
+      bclear(curbp);
+      free(curwp);
+      longjmp(loop1, 1);
+    }
 	}
 	mlwrite("[aborted]");
 	return (s);
