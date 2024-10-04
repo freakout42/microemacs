@@ -1604,7 +1604,7 @@ quit(f, n)
 #endif
 #endif
 		else {
-      bclear(curbp);
+      bbclear(curbp);
       free(curwp);
       longjmp(loop1, 1);
     }
