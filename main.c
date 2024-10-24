@@ -254,12 +254,17 @@ KEYTAB  keytab[] = {
 	CNTL|'S',		forwsearch,
 	CNTL|'R',		backpage,
      ED|CNTL|'T',		twiddle,
+#ifndef EMBEDDED
 	CNTL|'V',		forwpage,
      ED|CNTL|'W',		killregion,
+#else
+	CNTL|'W',		forwpage,
+     ED|CNTL|'C',		killregion,
+#endif
 #ifndef EMBEDDED
      ED|CNTL|'Y',		yank,
 #else
-     ED|CNTL|'C',		yank,
+     ED|CNTL|'V',		yank,
 #endif
 	CNTL|'Z',		quickexit,	/* quick save and exit  */
 	0x197,			quickexit,	/* CentOS5.2 */
@@ -292,18 +297,22 @@ KEYTAB  keytab[] = {
 	CTLX|'=',		showcpos,
 	CTLX|'(',		ctlxlp,
 	CTLX|')',		ctlxrp,
+#ifndef EMBEDDED
 	CTLX|'1',		onlywind,
 	CTLX|'2',		splitwind,
 	CTLX|'B',		usebuffer,
+#endif
 	CTLX|'C',		casestog,
 	CTLX|'E',		ctlxe,
      ED|CTLX|'F',		reformat,	/* mb: added */
 	CTLX|'K',		killbuffer,
      ED|CTLX|'L',		setlmargin,	/* mb: added */
 	CTLX|'M',		defmacro,	/* mb: added */
+#ifndef EMBEDDED
 	CTLX|'N',		nextwind,
 	CTLX|'O',		nextwind,	/* mb: EMACS-like */
 	CTLX|'P',		prevwind,
+#endif
 	CTLX|'Q',		visitog,	/* mb: added */
      ED|CTLX|'R',		setfillcol,
 #ifndef EMBEDDED
@@ -697,6 +706,7 @@ ascii:
 	return (status);
 }
 
+#ifndef EMBEDDED
 #if (ST_DA == 0)
 void usage()
 {
@@ -776,6 +786,7 @@ void usage()
 	exit(0);
 #endif
 }
+#endif
 #endif
 
 #if ST_DA
@@ -1347,6 +1358,7 @@ return 0;
 #undef register
 #endif
 
+#ifndef EMBEDDED
 /*
  *  mb: Display another file in another window.
  *      Called only if a second filename appears in command line.
@@ -1375,6 +1387,7 @@ edmore(fname)
 		mlwrite("Error reading next file!");
 	prevwind(0,1);
 }
+#endif
 
 /*
  * Read in a key.

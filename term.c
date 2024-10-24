@@ -446,7 +446,7 @@ int
 ttpending()
 {
 #if V7
-#ifdef FIONREAD
+#ifdef FIONREAD_disabled
 	long c;
   char *cp;
   cp = (char *) &c;
