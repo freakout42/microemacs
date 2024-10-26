@@ -1,10 +1,11 @@
 CC=gcc
-CFLAGS=-Wno-implicit-int
+CFLAGS=-Os -Wno-implicit-int
 SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
 OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
 
 mex.exe: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
+	strip $@
 
 $(SRC): ed.h
 

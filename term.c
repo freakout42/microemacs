@@ -9,6 +9,8 @@
 #define TERMC 1
 #include	"ed.h"
 
+WINDOW *windw1 = NULL;
+
 #if W32
 #include <windows.h>
 #include <stdio.h>
@@ -106,7 +108,6 @@ struct  termio  nstate;
 #endif
 
 #if	CURSES
-WINDOW *windw1 = NULL;
 #ifdef hpux
 	static int hpterm = FALSE;
 #endif
