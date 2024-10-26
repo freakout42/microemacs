@@ -1,6 +1,6 @@
 # Makefile for MEX on Unix
 
-CFLAGS=-O2 -Wall -Werror
+CFLAGS=-Os -Wall -Werror
 # -g -O0
 LIBS=-lcurses
 SRC=buffer.c cursor.c display.c files.c line.c random.c search.c term.c window.c word.c main.c
