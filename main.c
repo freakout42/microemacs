@@ -159,7 +159,7 @@ extern  int	usebuffer();		/* Switch a window to a buffer  */
 extern  int	killbuffer();		/* Make a buffer go away.	*/
 extern  int	reposition();		/* Reposition window		*/
 extern  int	negrepos();		/* Reposition window other way	*/
-extern  int	refresh();		/* Refresh the screen		*/
+extern  int	rxfresh();		/* Refresh the screen		*/
 extern  int	twiddle();		/* Twiddle characters		*/
 extern  int	ltwiddle();		/* Twiddle lines - mb: added	*/
 extern  int	tab();			/* Insert tab			*/
@@ -246,7 +246,7 @@ KEYTAB  keytab[] = {
      ED|CNTL|'J',		indent,
 #endif
      ED|CNTL|'K',               killtxt,
-	CNTL|'L',		refresh,
+	CNTL|'L',		rxfresh,
      ED|CNTL|'M',		tnewline,
 	CNTL|'N',		forwline,
      ED|CNTL|'O',		instog,		/* openline, */
@@ -1756,7 +1756,7 @@ ctrlg()
   CNTL|'I',   tab,             //  9 KEY_NEXT:        /* tabulator */      c = (CNTL | 'I')
   CNTL|'J',   tnewline,        // 10
   CNTL|'K',   killtxt,         // 11
-  CNTL|'L',   refresh,         // 12
+  CNTL|'L',   rxfresh,         // 12
   CNTL|'M',   tnewline,        // 13
   CNTL|'N',   forwline,        // 14 KEY_DOWN:        /* down arrow */     c = (CNTL | 'N')
   CNTL|'O',   openline/IC!,    // 15 KEY_IC:          /* Ins toggle */     c = (CNTL | 'O')

@@ -250,7 +250,7 @@ if (windw1 == NULL) {
 	keypad (stdscr, TRUE);
 } else {
 if (windw1 == stdscr) {
-  refresh();
+  wrefresh(stdscr);
   windw1 = newwin(21, 62, 2, 18);
   box(windw1, 0, 0);
   wrefresh(windw1);
