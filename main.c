@@ -1474,7 +1474,11 @@ logok:
 		case KEY_PPAGE:		/* PGUP key */
 					c = (META | 'V');     		break;
 		case KEY_NPAGE:		/* PGDN key */
+#ifndef EMBEDDED
 					c = (CNTL | 'V');     		break;
+#else
+					c = (CNTL | 'W');     		break;
+#endif
 		case KEY_LL:			/* END key */
 #ifdef KEY_END
 		case KEY_END:			/* END key */
