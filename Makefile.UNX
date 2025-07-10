@@ -13,7 +13,7 @@ SRC=utf82iso885915.c buffer.c cursor.c display.c files.c line.c random.c search.
 OBJ=utf82iso885915.o buffer.o cursor.o display.o files.o line.o random.o search.o term.o window.o word.o help.o
 
 mex: main.o $(OBJ)
-	$(CC) -static -o $@ $(LDFLAGS) main.o $(OBJ) $(LIBS)
+	$(CC) $(LDFLAGS) main.o $(OBJ) /opt/o2/lib/ctypeb.o $(LIBS) -o $@
 	strip $@
 
 libmex.a: mainloop.o $(OBJ)
