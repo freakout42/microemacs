@@ -1,10 +1,10 @@
 # Makefile for MEX on FreeBSD amd64
 
 CFLAGS=-O3
-LIBS=-lcurses
+LIBS=-lncursesw
 LDFLAGS=-s
-SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
-OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
+SRC=utf82iso885915.c buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
+OBJ=utf82iso885915.o buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
 USRINC=/usr/include
 
 mex: $(OBJ)
@@ -17,10 +17,10 @@ main.o: main.c curkeys.h
 	$(CC) $(CFLAGS) -Wno-missing-braces -c main.c
 
 term.o: term.c ed.h
-	$(CC) $(CFLAGS) -I/usr/include/ncurses -c term.c
+	$(CC) $(CFLAGS) -I/usr/include/ncursesw -c term.c
 
 curkeys.h:
-	grep 'define[^K]*KEY_' <$(USRINC)/ncurses.h >$@
+	grep 'define[^K]*KEY_' <$(USRINC)/ncursesw/curses.h >$@
 
 help.c: help_c.eng
 	-ln -f help_c.eng $@
