@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-Os -Wno-implicit-int
-SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
-OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o
+SRC=buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c utf82iso885915.c
+OBJ=buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o utf82iso885915.o
 
 mex.exe: $(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)

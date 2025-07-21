@@ -195,6 +195,7 @@ extern  int	back_brace();
 extern  int	instog();
 extern  int	casestog();
 extern  int	fortog();
+extern  int	utftog();
 extern  int	editog();
 extern  int	visitog();
 extern  int	gotolinum();
@@ -281,6 +282,7 @@ KEYTAB  keytab[] = {
 #else
      ED|CTLX|CNTL|'S',		filesave,
 #endif
+	CTLX|CNTL|'U',		utftog,		/* ar: added */
 	CTLX|CNTL|'V',		filevisit,
      ED|CTLX|CNTL|'W',		filewrite,
 #endif
@@ -1351,6 +1353,7 @@ if (argc==3 && !strcmp(argv[1], "-e")) {
 	gotolinum(TRUE,gline);
   mainloop(NULL, NULL);
 }
+mlerase();
 return 0;
 }
 #endif

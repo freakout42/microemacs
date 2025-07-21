@@ -280,6 +280,31 @@ int fortog(f,n)
 	return (TRUE);
 }
 
+/* ar: added function to toggle utf8 mode */
+
+int utftog(f,n)
+	int f, n;
+{
+	register WINDOW *wp;
+
+	if (curbp->b_flag & BFUTF8) {
+		mlwrite("[keep utf8 mode]");
+		curbp->b_flag &= ~BFUTF8;
+	} else {
+		mlwrite("[reverse utf8 mode]");
+		curbp->b_flag |= BFUTF8;
+	}
+/*
+  wp = wheadp;
+	while (wp != NULL) {
+		if (wp->w_bufp == curbp)
+			wp->w_flag |= WFMODE;
+		wp = wp->w_wndp;
+	}
+*/
+	return (TRUE);
+}
+
 /* mb: added function to toggle edit/view */
 
 int editog(f,n)

@@ -14,6 +14,9 @@ WINDOW *windw1 = NULL;
 #if W32
 #include <windows.h>
 #include <stdio.h>
+#ifdef UTF8
+#include <locale.h>
+#endif
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING  0x0004
 #endif
@@ -123,9 +126,7 @@ struct  termio  nstate;
  * finds the terminal, then assigns a channel to it
  * and sets it raw. On CPM it is a no-op.
  */
-#if CURSES
-int cur_utf8 = 0;
-#endif
+int cur_utf8 = 1;
 int ttopen()
 {
 #if	VMS
@@ -185,6 +186,9 @@ SetConsoleMode(stdoutHandle, outMode);
 GetConsoleScreenBufferInfo(stdoutHandle, &csbi);
 term.t_ncol = csbi.srWindow.Right - csbi.srWindow.Left + 1;
 term.t_nrow = csbi.srWindow.Bottom - csbi.srWindow.Top;
+#ifdef UTF8
+if (cur_utf8) setlocale(LC_ALL, "en_US.UTF-8");
+#endif
 #endif
 #if	MSDOS
 	struct text_info tinfo;
@@ -400,7 +404,16 @@ int ttputc(c)
 	putch(c);		/* Turbo C library MS-DOS call	*/
 #endif
 #if	W32
-	fputc(c, stdout);
+#ifdef UTF8
+  char e[6];
+  int i, l;
+  e[0] = c;
+  l = cur_utf8 ? to_utf8(e, 1) : 1;
+	for (i=0; i<l; i++) fputc(e[i], stdout);
+if (i>1) fputc('0'+l, stdout);
+#else
+  fputc(c, stdout);
+#endif
 #endif
 #if	V7
 #if	CURSES
@@ -408,7 +421,7 @@ int ttputc(c)
   cchar_t d;
   wchar_t e[2];
 if (cur_utf8) {
-  e[0] = to_ucpoint(c);
+  e[0] = iso2ucode(c);
   e[1] = '\0';
   setcchar(&d, e, 0, 0, NULL);
 	wadd_wch(windw1, &d);
@@ -576,14 +589,28 @@ int ttgetc()
 #endif
 #if	V7
 #if	CURSES
-	int ch;
-
+	int ch = 0;
 #ifdef UTF8
 wint_t keypress = { 0 };
+int t, y, x;
+#endif
+
+while (ch == 0) {
+#ifdef UTF8
 if (cur_utf8) ch = (get_wch(&keypress) == KEY_CODE_YES) ? keypress : to_latin9(keypress);
 else
-#endif
+#endif /* UTF8 */
 ch = getch();
+#ifdef UTF8
+  if (ch == 191) {
+//     getyx(windw1, y, x);
+     t = mlyesno("Non-mappable char: loosing - ACCEPT");
+     mlerase();
+     update(TRUE);
+     if (!t) ch = 0;
+  }
+#endif
+
 #ifdef WIN32
 if (ch < 0) ch = 256 + ch;
 #endif
@@ -592,11 +619,12 @@ if (ch < 0) ch = 256 + ch;
 	if (hpterm && ch>=KEY_F(0) && ch<=KEY_F(12))
 		getch();
 #endif
+  }
 	return ch;
 #else
 	return(fgetc(stdin));
-#endif
-#endif
+#endif /* CURSES */
+#endif /* V7 */
 }
 
 /*
