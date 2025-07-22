@@ -350,6 +350,7 @@ SetConsoleMode(stdoutHandle, outModeInit);
 	stty(1, &ostate);
 #else
 #if	CURSES
+char *smcup;
 if (windw1 != stdscr) {
   delwin(windw1);
   windw1 = stdscr;
@@ -357,6 +358,11 @@ if (windw1 != stdscr) {
 } else {
   endwin();
   windw1 = NULL;
+  smcup = tigetstr("smcup");
+  if (!smcup || smcup == (char *)-1 || !*smcup) {
+    putchar('\n');
+    fflush(stdout);
+  }
   return 1;
 }
 #else

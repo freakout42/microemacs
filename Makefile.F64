@@ -1,6 +1,6 @@
 # Makefile for MEX on FreeBSD amd64
 
-CFLAGS=-O3
+CFLAGS=-Os -Wno-invalid-source-encoding
 LIBS=-lncursesw
 LDFLAGS=-s
 SRC=utf82iso885915.c buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
@@ -20,7 +20,7 @@ term.o: term.c ed.h
 	$(CC) $(CFLAGS) -I/usr/include/ncursesw -c term.c
 
 curkeys.h:
-	grep 'define[^K]*KEY_' <$(USRINC)/ncursesw/curses.h >$@
+	grep 'define[^K]*KEY_' <$(USRINC)/curses.h >$@
 
 help.c: help_c.eng
 	-ln -f help_c.eng $@

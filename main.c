@@ -1353,7 +1353,6 @@ if (argc==3 && !strcmp(argv[1], "-e")) {
 	gotolinum(TRUE,gline);
   mainloop(NULL, NULL);
 }
-mlerase();
 return 0;
 }
 #endif

@@ -8,7 +8,7 @@
  * which were changed to char.
  * um: for UN*X System V set the defines V7 ``and'' SYS_V to 1 !!
  */
-#define VERSION "7.0"
+#define VERSION "7.1"
 
 #define _XOPEN_SOURCE_EXTENDED 1
 
