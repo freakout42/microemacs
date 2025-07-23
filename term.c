@@ -629,7 +629,7 @@ int ttgetc()
 	int ch = 0;
 #ifdef UTF8
 wint_t keypress = { 0 };
-int t, y, x;
+int t;
 #endif
 
 while (ch == 0) {
@@ -640,7 +640,6 @@ else
 ch = getch();
 #ifdef UTF8
   if (ch == 191) {
-//     getyx(windw1, y, x);
      t = mlyesno("Non-mappable char: loosing - ACCEPT");
      mlerase();
      update(TRUE);

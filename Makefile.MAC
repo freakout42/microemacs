@@ -1,7 +1,7 @@
 # Makefile for MEX on MacOS 14.6 Xcode-14.4
 # need brew install ncurses
 
-CFLAGS=-g -O0 -Wall -Wno-deprecated-non-prototype
+CFLAGS=-g -O0 -Wall -Wno-deprecated-non-prototype -Wno-invalid-source-encoding
 LIBS=-lcurses
 SRC=utf82iso885915.c buffer.c cursor.c display.c files.c line.c main.c random.c search.c term.c window.c word.c
 OBJ=utf82iso885915.o buffer.o cursor.o display.o files.o help.o line.o main.o random.o search.o term.o window.o word.o

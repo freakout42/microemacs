@@ -60,7 +60,6 @@ int to_utf8(char *buf, int nbuf) {
 
 int to_latin9(const unsigned int code) {
   int i;
-  int u = 0;
   if (code < 256U) return code;
   for (i=0; i < 128; i++) if (iso2ucodet[i] == code) { return i + 128; }
   if (nonisofree < MAXMAPS) { iso2ucodet[nonisofree++] = code; return nonisofree + 127; }
@@ -177,7 +176,7 @@ size_t utf8_to_latin9(unsigned char *output, unsigned char *input, size_t length
 int to_utf16(char *buf, int nbuf) {
   char *buf2;
   buf2 = strdup(buf);
-  int i, len;
+  int len;
   usednoniso = 1;
   len = utf8_to_latin9((unsigned char *)buf, (unsigned char *)buf2, strlen(buf2));
   free(buf2);
