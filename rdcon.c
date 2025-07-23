@@ -19,6 +19,7 @@ int main()
   HANDLE in = GetStdHandle(STD_INPUT_HANDLE);
   int n = 0;
   int k, vk, ch, uc, sc, ck;
+  SetConsoleMode(in, 0);
   puts("#    UC     ch u/d  VK   SC  State\n\n");
   for (;;) {
     INPUT_RECORD ir[1];

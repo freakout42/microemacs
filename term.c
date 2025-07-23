@@ -187,7 +187,7 @@ if (cur_utf8) {
 }
 #endif
 stdinHandle = GetStdHandle(STD_INPUT_HANDLE);
-SetConsoleMode(stdinHandle, ENABLE_WINDOW_INPUT);
+SetConsoleMode(stdinHandle, 0); //ENABLE_WINDOW_INPUT);
 stdoutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 GetConsoleMode(stdoutHandle, &outMode);
 outModeInit = outMode;
@@ -337,7 +337,7 @@ int ttclose()
 	ttputs ("\033f");		/* hide text cursor */
 #endif
 #if	W32
-printf("\x1b[0m");	
+printf("\x1b[0m\n");
 SetConsoleMode(stdoutHandle, outModeInit);
 #endif
 #if	MSDOS
@@ -423,7 +423,6 @@ int ttputc(c)
   e[0] = c;
   l = cur_utf8 ? to_utf8(e, 1) : 1;
 	for (i=0; i<l; i++) fputc(e[i], stdout);
-if (i>1) fputc('0'+l, stdout);
 #else
   fputc(c, stdout);
 #endif
@@ -601,27 +600,24 @@ int ttgetc()
 	return (FUNC | k);
 #endif
 #if	W32
-  int n = 0;
+  DWORD n = 0;
   int k, vk, ch, uc, sc, ck;
   k = 0;
   INPUT_RECORD ir[1];
   while ( k == 0) {
-    ReadConsoleInputW(in, ir, 1, &n));
+    ReadConsoleInputW(stdinHandle, ir, 1, &n);
     if (ir[0].EventType & KEY_EVENT) {
-     if (ir[i].Event.KeyEvent.bKeyDown) {
-      vk = ir[i].Event.KeyEvent.wVirtualKeyCode;
-      ch = ir.Event.KeyEvent.uChar.AsciiChar;
-      sc = ir[i].Event.KeyEvent.wVirtualScanCode;
-      ck = ir[i].Event.KeyEvent.dwControlKeyState;
-      uc = ir[i].Event.KeyEvent.uChar.UnicodeChar;
+     if (ir[0].Event.KeyEvent.bKeyDown) {
+      vk = ir[0].Event.KeyEvent.wVirtualKeyCode;
+      ch = ir[0].Event.KeyEvent.uChar.AsciiChar;
+      sc = ir[0].Event.KeyEvent.wVirtualScanCode;
+      ck = ir[0].Event.KeyEvent.dwControlKeyState;
+      uc = ir[0].Event.KeyEvent.uChar.UnicodeChar;
       if (uc == 0) {
-        switch (ck) {
-          case SHIFT_PRESSED: break;
-          case ENHANCED_KEY:
-          default: k = FUNC | sc;
-        }
+       if (!(ck & (SHIFT_PRESSED | LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED | CAPSLOCK_ON )))
+        if (sc != ':') k = FUNC | sc;
       } else {
-        k = uc;
+        k = to_latin9(uc);
       }
      }
     }
