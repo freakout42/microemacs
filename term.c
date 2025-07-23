@@ -20,6 +20,7 @@ WINDOW *windw1 = NULL;
 #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 #define ENABLE_VIRTUAL_TERMINAL_PROCESSING  0x0004
 #endif
+static HANDLE stdinHandle;
 static HANDLE stdoutHandle;
 static DWORD outModeInit;
 #endif
@@ -178,6 +179,15 @@ term.t_nrow = (getenv("LINES")   ? atoi(getenv("LINES"))   : NROW) - 1;
 #if W32
 DWORD outMode = 0;
 CONSOLE_SCREEN_BUFFER_INFO csbi;
+#ifdef UTF8
+if (cur_utf8) {
+  SetConsoleOutputCP(CP_UTF8);
+  SetConsoleCP(CP_UTF8);
+  setlocale(LC_ALL, "en_US.UTF-8");
+}
+#endif
+stdinHandle = GetStdHandle(STD_INPUT_HANDLE);
+SetConsoleMode(stdinHandle, ENABLE_WINDOW_INPUT);
 stdoutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 GetConsoleMode(stdoutHandle, &outMode);
 outModeInit = outMode;
@@ -186,9 +196,6 @@ SetConsoleMode(stdoutHandle, outMode);
 GetConsoleScreenBufferInfo(stdoutHandle, &csbi);
 term.t_ncol = csbi.srWindow.Right - csbi.srWindow.Left + 1;
 term.t_nrow = csbi.srWindow.Bottom - csbi.srWindow.Top;
-#ifdef UTF8
-if (cur_utf8) setlocale(LC_ALL, "en_US.UTF-8");
-#endif
 #endif
 #if	MSDOS
 	struct text_info tinfo;
@@ -580,7 +587,7 @@ int ttgetc()
 	}
 	return (c);
 #endif
-#if	(MSDOS | W32)
+#if	MSDOS
 	int k;
 
 	k = getch();
@@ -592,6 +599,29 @@ int ttgetc()
 	if (k >= 0x68 && k <= 0x71)	/* ALT-Fn		*/
 		k -= 0x14;
 	return (FUNC | k);
+#endif
+#if	W32
+	INPUT_RECORD ir;
+  int k = 0;
+  long i;
+  int vk, ch, uc, sc;
+  while (k == 0) {
+    ReadConsoleInputW(hStdInput, &ir, 1, &i);
+    if (ir.EventType & KEY_EVENT) {
+      if (ir.Event.KeyEvent.bKeyDown) {
+        vk = ir.Event.KeyEvent.wVirtualKeyCode;
+//      ch = ir.Event.KeyEvent.uChar.AsciiChar;
+        sc = ir.Event.KeyEvent.wVirtualScanCode;
+        uc = ir.Event.KeyEvent.uChar.UnicodeChar;
+        if (uc == 0) {
+          k = sc;
+        } else {
+          k = uc;
+        }
+      }
+    }
+  }
+  return k;
 #endif
 #if	V7
 #if	CURSES
