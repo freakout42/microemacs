@@ -601,24 +601,29 @@ int ttgetc()
 	return (FUNC | k);
 #endif
 #if	W32
-	INPUT_RECORD ir;
-  int k = 0;
-  long i;
-  int vk, ch, uc, sc;
-  while (k == 0) {
-    ReadConsoleInputW(hStdInput, &ir, 1, &i);
-    if (ir.EventType & KEY_EVENT) {
-      if (ir.Event.KeyEvent.bKeyDown) {
-        vk = ir.Event.KeyEvent.wVirtualKeyCode;
-//      ch = ir.Event.KeyEvent.uChar.AsciiChar;
-        sc = ir.Event.KeyEvent.wVirtualScanCode;
-        uc = ir.Event.KeyEvent.uChar.UnicodeChar;
-        if (uc == 0) {
-          k = sc;
-        } else {
-          k = uc;
+  int n = 0;
+  int k, vk, ch, uc, sc, ck;
+  k = 0;
+  INPUT_RECORD ir[1];
+  while ( k == 0) {
+    ReadConsoleInputW(in, ir, 1, &n));
+    if (ir[0].EventType & KEY_EVENT) {
+     if (ir[i].Event.KeyEvent.bKeyDown) {
+      vk = ir[i].Event.KeyEvent.wVirtualKeyCode;
+      ch = ir.Event.KeyEvent.uChar.AsciiChar;
+      sc = ir[i].Event.KeyEvent.wVirtualScanCode;
+      ck = ir[i].Event.KeyEvent.dwControlKeyState;
+      uc = ir[i].Event.KeyEvent.uChar.UnicodeChar;
+      if (uc == 0) {
+        switch (ck) {
+          case SHIFT_PRESSED: break;
+          case ENHANCED_KEY:
+          default: k = FUNC | sc;
         }
+      } else {
+        k = uc;
       }
+     }
     }
   }
   return k;
