@@ -614,7 +614,7 @@ int ttgetc()
       ck = ir[0].Event.KeyEvent.dwControlKeyState;
       uc = ir[0].Event.KeyEvent.uChar.UnicodeChar;
       if (uc == 0) {
-       if (!(ck & (SHIFT_PRESSED | LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED | CAPSLOCK_ON )))
+       if (!(ck & (SHIFT_PRESSED | LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED )))
         if (sc != ':') k = FUNC | sc;
       } else {
         k = to_latin9(uc);
