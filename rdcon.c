@@ -1,4 +1,5 @@
 /* https://archives.miloush.net/michkap/archive/2005/12/15/504092.html */
+/* gcc -static -DNCURSES_STATIC rdcon.c -lncursesw -o rdcon.exe */
 #include <windows.h>
 #include <wincon.h>
 #include <stdio.h>
