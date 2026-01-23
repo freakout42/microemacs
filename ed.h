@@ -1,4 +1,4 @@
-/* $Id: ed.h,v 1.60 2025/09/03 12:40:16 axel Exp $
+/* $Id: ed.h,v 1.61 2026/01/23 08:36:25 axel Exp $
  * This file is the general header file for
  * all parts of the MicroEMACS display editor. It contains
  * definitions used by everyone, and it contains the stuff
@@ -8,14 +8,13 @@
  * which were changed to char.
  * um: for UN*X System V set the defines V7 ``and'' SYS_V to 1 !!
  */
-#define VERSION "7.3"
+#define VERSION "7.4"
 
 #define _XOPEN_SOURCE_EXTENDED 1
 
 #if (VT100)
 #define V7      1			/* V7 UN*X or Coherent          */
 #define SYS_V   1			/* System V UN*X                */
-#define BSD     0			/* BSD xBSD MacOS               */
 #define W32     0			/* Windows 32                   */
 #define ANSI    1			/* Ansi terminal                */
 #define VT52    0			/* VT52 terminal                */
@@ -28,7 +27,6 @@
 #ifndef EMBEDDED
 #define V7      0
 #define SYS_V   0
-#define BSD     0
 #define W32     1
 #define ANSI    1
 #define VT52    0
@@ -39,7 +37,6 @@
 #else
 #define V7      1
 #define SYS_V   1
-#define BSD     0
 #define W32     0
 #define ANSI    0
 #define VT52    0
@@ -52,7 +49,6 @@
 #if (HP700)
 #define V7      1
 #define SYS_V   1
-#define BSD     0
 #define W32     0
 #define ANSI    0
 #define VT52    0
@@ -62,9 +58,9 @@
 #endif
 
 #if (__FreeBSD__ | __APPLE__)
+#define _DARWIN_C_SOURCE 1
 #define V7      1
 #define SYS_V   1
-#define BSD     1
 #define W32     0
 #define ANSI    0
 #define VT52    0
@@ -75,7 +71,6 @@
 #if (hpux | COHERENT | unix | __unix | _HPUX_SOURCE | __DARWIN_UNIX03) && !defined(VT100) && !defined(HP700) && !defined(_WIN32)
 #define V7      1
 #define SYS_V   1
-#define BSD     0
 #define W32     0
 #define ANSI    0
 #define VT52    0
@@ -88,7 +83,6 @@
 #if (__BEOS__)
 #define V7      1
 #define SYS_V   1
-#define BSD     0
 #define W32     0
 #define ANSI    0
 #define VT52    0
