@@ -1762,7 +1762,7 @@ ctrlg()
   CNTL|'E',   gotoeol,         //  5 KEY_END:         /* END key */        c = (CNTL | 'E')
   CNTL|'F',   forwchar,        //  6 KEY_RIGHT:       /* right arrow */    c = (CNTL | 'F')
   CNTL|'G',   undo,            //  7
-  CNTL|'H',   backdel,         //  8 KEY_BACKSPACE:   /* backspace */      c = (CNTL | 'H') \177 0x1f DEL
+  CNTL|'H',   backdel,         //  8 KEY_BACKSPACE:   /* backspace */      c = (CNTL | 'H') \177 0x7f DEL
   CNTL|'I',   tab,             //  9 KEY_NEXT:        /* tabulator */      c = (CNTL | 'I')
   CNTL|'J',   tnewline,        // 10
   CNTL|'K',   killtxt,         // 11
