@@ -17,4 +17,4 @@ help.c: help_c.eng
 	cp help_c.eng $@
 
 clean:
-	rm -f *.o core mex curkeys.h help.c mev mes me
+	rm -f *.o core curkeys.h help.c mev
