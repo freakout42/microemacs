@@ -20,7 +20,7 @@
 extern int ctrlg();
 
 #ifndef EMBEDDED
-#if CURSES
+#if CURSES || W32
 int cur_utf8 =
 #ifdef UTF8
                1;
